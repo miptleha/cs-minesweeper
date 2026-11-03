@@ -12,3 +12,5 @@ For publishing, run in `Minesweeper` folder:
 ```bash
 dotnet publish -c Release
 ```
+
+[![hits](https://myhits.vercel.app/api/hit/https%3A%2F%2Fgithub.com%2Fmiptleha%2Fcs-minesweeper?color=blue&label=hits&size=small)](https://myhits.vercel.app)
