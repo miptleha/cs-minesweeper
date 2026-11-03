@@ -15,7 +15,7 @@
     <SelfContained>false</SelfContained>
     <DebugType>None</DebugType>
     <DebugSymbols>false</DebugSymbols>
-    <PublishDir>..\dist\$(MSBuildProjectName)\</PublishDir>
+    <PublishDir>..\..\dist\$(MSBuildProjectName)\</PublishDir>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Icon.ico" />

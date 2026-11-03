@@ -16,7 +16,7 @@
     <SelfContained>false</SelfContained>
     <DebugType>None</DebugType>
     <DebugSymbols>false</DebugSymbols>
-    <PublishDir>..\dist\$(MSBuildProjectName)\</PublishDir>
+    <PublishDir>..\..\dist\$(MSBuildProjectName)\</PublishDir>
   </PropertyGroup>
 
 </Project>
