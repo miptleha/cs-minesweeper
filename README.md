@@ -1,23 +1,27 @@
-﻿Classic **Minesweeper** game. Two UI implementations are planned:
-- **WinForms** (Phase 5) — in progress. Specification: `docs/09-PHASE-5-WINFROMS.md`.
+﻿Classic **Minesweeper** game. Two UI implementations:
+- **WinForms** (Phase 5) — done (playable MVP).
 - **MonoGame** (Phase 6) — planned.
 
 Game logic (`MinesweeperCore`) is complete and covered by unit tests.
 
-To run or develop the project, you need `.NET 8` from Microsoft.  
-- Use the **.NET 8 SDK** for building, debugging, and publishing.  
-- Use the **.NET Desktop Runtime** if you only want to run the compiled game.
+## For Players
 
-You can get the correct package from the official download page: [Download .NET 8](https://dotnet.microsoft.com/download/dotnet/8.0).  
-On the page, just pick the option that matches your needs (SDK or Desktop Runtime).
+You don't need to install anything! Just download the latest `Minesweeper-vX.X.X-win-x64.zip` from the [Releases page](https://github.com/miptleha/cs-minesweeper/releases), extract it, and run `MinesweeperWinForms.exe`. 
+
+The game is shipped as a self-contained single file, so the .NET Runtime is already bundled inside.
+
+## For Developers
+
+To build or develop the project, you need the **.NET SDK** installed.
+*Note: The solution uses the `.slnx` format, which requires **.NET SDK 9.0.100 or newer**.*
+
+You can get the latest SDK from the official download page: [Download .NET](https://dotnet.microsoft.com/download).
 
 Debugging is available in Visual Studio 2022 (open `slnx` file) and VS Code (open `Minesweeper` folder).
 
-## Commands
+### Commands
 
-All commands run from the `Minesweeper` folder — the one that contains
-`Minesweeper.slnx`. The `.slnx` solution format requires .NET SDK 9.0.100 or
-later; target frameworks are `net8.0` / `net8.0-windows`.
+All commands run from the `Minesweeper` folder — the one that contains `Minesweeper.slnx`.
 
 ```bash
 # Build the whole solution (Debug)
@@ -26,13 +30,13 @@ dotnet build
 # Run unit tests (Debug)
 dotnet test
 
-# Run the WinForms UI (Phase 5)
+# Run the WinForms UI (Debug)
 dotnet run --project src/MinesweeperWinForms
 
-# Run the MonoGame UI (Phase 6)
+# Run the MonoGame UI (Debug)
 dotnet run --project src/MinesweeperMonoGame
 
-# Publish UI projects to dist/ (Release, win-x64)
+# Publish (Release, win-x64)
 dotnet publish -c Release
 ```
 

@@ -1,86 +1,78 @@
 # 06 — Changelog
 
-## [Unreleased]
+Все заметные изменения в проекте. Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
+проект придерживается [Semantic Versioning](https://semver.org/lang/ru/).
+
+## [0.2.0] - 2026-11-06
+
+Релиз 0.2.0 знаменует собой завершение Phase 5 — появление полноценного и играбельного WinForms-интерфейса, а также укрепление контрактов ядра и расширение тестового покрытия.
 
 ### Added
 
-- `Board.FlaggedCount` — инкрементальный счётчик флагов, поставленных игроком. `GameEngine.RemainingMines` стал O(1) (`MineCount − FlaggedCount`).
-- `ITimeProvider` (порт времени) + `SystemTimeProvider` (реализация) + `FakeTimeProvider` (тестовая).
-- `SystemRandomProvider(int? seed = null)` — конструктор с seed.
-- `InMemoryRecordStore` — заглушка для тестов и UI.
-- `CellState.WrongFlag` + `CellInfo.WasWrongFlag` — ошибочные флаги отличимы от обычных Closed.
-- `RevealService.RevealAll(Board)` — батчинг всех мин и ошибочных флагов в один `CellsRevealed` при поражении.
-- `RecordTable.Remove(RecordEntry)` — удаление записи по ссылке.
-- `GameEngine.BoardForTesting` — internal-свойство для тестов (через `[InternalsVisibleTo]`).
-- 12 новых тестов (30 → 42): идемпотентность кликов, поведение после Win/Lose, сброс таймера, `Difficulty`, `GetCell` out-of-bounds, `StartNewGame` reset.
-- `CellState.Question` — новое состояние клетки с меткой «возможно, мина».
-- Ассеты `cell_question.png`, `cell_wrong_flag.png`, `minus.png`, `icon.ico`,
-  `smiley_win.png`, `smiley_lose.png`, `smiley_oh.png` — все готовы.
-- `CellInfo.Position`, `GameEngine.PlayerName`, `GameEngine.RemainingMines`, `Board.OpenedSafeCells`, `Board.Open(CellPoint, CellContent)`.
-- 15 новых тестов (55 → 70): `RemainingMines`, `PlayerName`, `Speed`, `Cascade_5x5`, `AllCellsFlagged`, `AllCellsQuestioned`, `Dispose`, `InvalidPoint`, `FirstClickOnFlagged/Question`.
-- `Board.PlaceMines(ReadOnlySpan<CellPoint>)` — расстановка мин + подсчёт `AdjacentMines` за O(mineCount × 8) вместо O(TotalCells × 8).
-- `Board.CellRef(int, int)` / `Board.CellRef(CellPoint)` — ref-доступ к клетке (struct).
-- `Board.SetWrongFlag(int, int)` — установка `WrongFlag` через `Board`.
-- `PerformanceTests` — 3 теста производительности: `Speed_30x24WithManyMines_...` (< 1 с), `Speed_30x24WithFewMines_...` (< 1 с), `Stress_1000x1000With100kMines_...` (< 5 с).
-- `GameSettingsTests` — валидация границ `GameSettings` (3×3 .. 1000×1000, `MineCount` 0..(W-1)*(H-1)).
-- `CascadeTests.Cascade_3x3WithZeroMines_CornerClickOpensAllAndWins` — тест минимального поля 3×3.
-- 1 новый тест (93 → 94): `Cascade_9x9WithOneMine_CellsRevealedHasExactly80UniqueCells`.
+**Ядро (MinesweeperCore):**
+
+- `Board.MinesPlaced` (internal) и защита в `PlaceMines`: теперь метод бросает `InvalidOperationException` при попытке повторной расстановки мин или при наличии дубликатов в переданном `ReadOnlySpan<CellPoint>`. Это предотвращает молчаливое создание непроходимой партии.
+- `GameEngine.OpenCell` теперь проверяет `Board.MinesPlaced` перед вызовом `PlaceMines`. Это позволяет тестам вручную расставлять мины до первого клика, не нарушая контракт `Board`.
+- 6 новых тестов на события (всего 105): проверка payload (`CellChanged`, `TriggerCell`), порядок эмиссии (`BoardGenerated` -> `CellChanged` -> `CellsRevealed` -> `GameStateChanged`), отсутствие повторной эмиссии `BoardGenerated`.
+- 4 новых теста в `BoardTests` на защиту от дубликатов и повторного вызова `PlaceMines`.
+
+**WinForms UI (MinesweeperWinForms):**
+
+- Полноценный интерфейс игры (`MainForm`), включая отрисовку поля, LED-счётчики таймера и мин, смайлик-кнопку.
+- Классическое поведение мыши: открытие клетки по `MouseUp` (а не `MouseDown`), поддержка перетаскивания с зажатой кнопкой.
+- `JsonRecordStore` — сохранение таблицы рекордов в `%LocalAppData%\Minesweeper\records.json` (безопасно, не требует прав администратора).
+- Окно «Лучшие результаты» (`RecordsForm`) с тремя вкладками (Новичок, Любитель, Профессионал).
+- Окно «О программе» (`AboutForm`) со ссылкой на GitHub.
+- Диалог ввода имени (`NamePromptForm`), появляющийся при побитии рекорда.
+- Встроенные ресурсы (Embedded Resources) для картинок: изображения теперь упакованы в `.dll` и не могут быть случайно удалены или изменены пользователем в папке с игрой.
+- Закрытие дочерних окон по клавише `Esc`.
 
 ### Changed
 
-- **`GameEngine.RemainingMines`** больше не обнуляется при `Won`. Раньше при победе UI видел `0`; теперь — `MineCount − поставленные_флаги`. Значение информационное и может быть ложным.
-- **Первый клик: классическое поведение Windows XP** — из расстановки мин исключается только клетка клика; соседи могут содержать мины. Первый клик больше не гарантирует каскадное открытие. Затрагивает `MinePlacement.PlaceMines`, тесты `FirstClickSafetyTests`, `CascadeTests`, `FlagTests`.
-- **Каскад больше не эмитит `CellChanged`** — только одно `CellsRevealed`.
-- **`RevealService.RevealAll`** — вместо N `CellChanged` (по одному на каждую мину) один `CellsRevealed`.
-- **`SaveRecord`** — сначала сохранение в стор, при `false` в память не пишем.
-    `AddRecord` в память вызывается только после успешного `SaveRecord`; при false пятая запись остаётся на месте.
-- **`Elapsed`** фиксируется до смены `GameState` при `Won`/`Lost`.
-- **Первый клик вне поля** не запускает игру (ни `PlaceMines`, ни `BoardGenerated`, ни таймер).
-- **`InMemoryRecordStore.SaveRecord`** — честно возвращает `bool`: `true` только если рекорд попал в топ-5 до обрезки.
-- **`CellInfo`, `RecordEntry`** — `sealed record` (было `class`).
-- **Кастомный делегат `GameStateChangedEventHandler`** заменён на `EventHandler<GameStateChangedEventArgs>`.
-- **Правый клик циклически переключает метку**: `Closed → Flagged →
-  Question → Closed`. Метод `GameEngine.ToggleFlag` переименован в
-  `GameEngine.CycleMark`; `Cell.ToggleFlag` → `Cell.CycleMark`.
-- **Правильно помеченные мины при `Lost` остаются `Flagged`** (не
-  открываются). Раньше открывались как обычные мины — теперь сохраняются
-  как награда за правильную догадку.
-- **`Question` не блокирует открытие**: клетку в состоянии вопроса можно
-  открыть левым кликом, и каскад её не пропускает (только `Flagged`
-  блокирует).
-- **`Point` → `CellPoint`**, `CellInfo.Point` → `Position`, `CellChange.Point` → `Position`.
-- **Порядок `OpenCell` при `NotStarted`**: `Flagged` не запускает игру.
-- **`CycleMark` разрешён в `NotStarted`**: меняет метку, эмитит `CellChanged`, но `GameState` остаётся `NotStarted`.
-- **`WinCondition.IsWon`** — O(1) через `OpenedSafeCells`.
-- **`GetCell`/`GetAllCells` после `Dispose`** — `ObjectDisposedException`.
-- **`GameSettings`** — сообщения исключений на русском.
-- **`Cell` — `struct` вместо `class`.** На 1000×1000 это ~16 MB и одна аллокация вместо 1M `new Cell()`. Модификация — через `Board.CellRef`, чтение — копия через `Board[x, y]`.
-- **`MinePlacement.PlaceMines`** — partial Fisher-Yates (только `mineCount` swaps вместо полного shuffle), `CellPoint[]` вместо `List<CellPoint>`, прямое сравнение с `safePoint`. Удалён `CalculateAdjacentMines` — логика перенесена в `Board.PlaceMines`.
-- **`RevealService.CascadeReveal`** — `bool[] visited` вместо `HashSet<CellPoint>`, инлайн-обход соседей без `yield return`. Возвращает `List<CellPoint>` вместо `IEnumerable<CellPoint>`.
-- **`GameEngine.OpenCell`** — при каскаде `List<CellInfo>` для `CellsRevealed` строится только если есть подписчики.
-- **`GameSettings`** — границы валидации: `MinWidth = MinHeight = 3`, `MaxWidth = MaxHeight = 1000` (было 9..30 / 9..24). Классические `9..30 / 9..24` остаются рекомендацией для UI.
+**Ядро (MinesweeperCore):**
+
+- `RecordTable` переведен в `internal`. Публичное API для работы с рекордами ограничено `RecordEntry` и `IRecordStore`.
+- `RevealService.CascadeReveal` больше не возвращает дубликаты: `startPoint` добавляется один раз при инициализации, соседи — один раз при `Open`. Ранее Empty-клетки попадали в список дважды (на 9×9 с 1 миной — ~157 записей вместо 80).
+- `GameEngine.OpenCell`: убрана избыточная проверка `AdjacentMines == 0` при определении каскада (достаточно `content == CellContent.Empty`).
+- `SaveRecord`: сначала вызывается сохранение в стор, при `false` в память ничего не пишется (пятая запись не вытесняется).
+
+**WinForms UI:**
+
+- Переименование `Form1` в `MainForm`.
+- `AutoScaleMode = AutoScaleMode.None` для идеально ровных клеток 24×24 на любых мониторах.
+- Изменение логики `RenderLedCounter` и `UpdateMineCounter`: используется `InterpolationMode.NearestNeighbor` и явные `Rectangle` для предотвращения искажения пиксель-арта.
+- Смайлик теперь представлен стандартной `Button` (размер 32×32), картинка масштабируется до 28×28 для идеальной посадки в рамку.
 
 ### Fixed
 
 - **`GameEngine.RemainingMines`** больше не сканирует поле на каждое чтение (был O(N) через `CountFlagged`). Теперь O(1) через `Board.FlaggedCount`.
-- `docs/03-ARCHITECTURE.md`: упоминание `ToggleFlag` заменено на `CycleMark`.
-- `docs/02-GAME-RULES.md` §16.1: добавлено упоминание `smiley_win.png` на победе.
-- `docs/02-GAME-RULES.md` §15: описана формула счётчика мин (не считает `Question`, поддерживает отрицательные значения через `minus.png`).
-- Добавлены тесты `Win_CorrectlyFlaggedMine_RemainsFlagged`,
-  `Win_MineInQuestionState_RemainsQuestion`,
-  `Lose_QuestionOnSafeCell_RemainsQuestion` — покрывают §16.1 и §16.2,
-  которые раньше не были проверены (47 → 50 тестов).
-- **`RevealService.CascadeReveal`** больше не возвращает дубликаты: `startPoint`
-    добавляется один раз при инициализации, соседи — один раз при `Open`. Раньше
-    Empty-клетки попадали в список дважды (на 9×9 с 1 миной — ~157 записей вместо 80).
-- **`CellRef(x, y).IsMine = true` больше не используется в тестах** — заменён на `Board.PlaceMines(...)`, который корректно обновляет `AdjacentMines` у соседей. Раньше такой обход `PlaceMines` оставлял соседей с `AdjacentMines = 0`, и клетки открывались как `Empty` вместо `Number`.
+- **`GameEngine.OpenCell`** при каскаде строит `List<CellInfo>` только если есть подписчики на `CellsRevealed` (защита от лишних аллокаций).
+- **`Board.Reset`**: исправлено описание (комментарий), теперь явно указано, что мины тоже снимаются.
+- Добавлены тесты `Win_CorrectlyFlaggedMine_RemainsFlagged`, `Win_MineInQuestionState_RemainsQuestion`, `Lose_QuestionOnSafeCell_RemainsQuestion` — покрывают §16.1 и §16.2 `02-GAME-RULES.md`.
+- `docs/02-GAME-RULES.md` §15: описана формула счётчика мин (не считает `Question`, поддерживает отрицательные значения).
+- `docs/03-ARCHITECTURE.md`: упоминание `ToggleFlag` заменено на `CycleMark`, добавлено примечание про `JsonRecordStore`.
+- `docs/09-PHASE-5-WINFROMS.md`: полностью переписан под актуальную архитектуру WinForms (встроенные ресурсы, `MainForm`, `JsonRecordStore`, классическое поведение мыши).
 
 ### Removed
 
-- Поле `_random` в `GameEngine` (передаётся напрямую в `MinePlacement`).
-- Метод `RevealAllMines` из `GameEngine` (перенесён в `RevealService` как `RevealAll`).
-- Метод `ITimeProvider.Sleep` (не относится к абстракции времени).
 - Отладочный `DebugFlagTests.cs`.
 - `CellInfo.WasWrongFlag` (заменён на `State == CellState.WrongFlag`).
 - `IRandomProvider.NextDouble` (не используется).
 - `RecordTable.Remove` (не используется).
+- Зависимость от копирования `*.png` в выходную папку (теперь только Embedded Resources).
+
+---
+
+## [0.1.0] - 2026-10-15
+
+Первый релиз ядра `MinesweeperCore` (Phase 1–4). Полная бизнес-логика игры, порты для тестирования, базовая архитектура.
+
+### Added
+
+- Модели `CellPoint`, `Cell`, `Board`, `GameSettings`, `DifficultyPresets`.
+- Генерация мин (ленивая, только после первого клика) с защитой первого клика.
+- Каскадное открытие (Flood Fill) без рекурсии.
+- Состояния: `Closed`, `Opened`, `Flagged`, `Question`, `WrongFlag`.
+- Счётчик мин `RemainingMines`, таймер `Elapsed`, таблица рекордов (топ-5).
+- Абстракции `IRandomProvider`, `IRecordStore`, `ITimeProvider`.
+- 94 юнит-теста (включая тесты производительности).

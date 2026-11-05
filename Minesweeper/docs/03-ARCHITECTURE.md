@@ -41,7 +41,8 @@
 | `SystemTimeProvider` | `ITimeProvider` | Обёртка над `DateTime.UtcNow`. В тестах подменяется на ручные часы. |
 | `InMemoryRecordStore` | `IRecordStore` | Хранит рекорды в памяти. Для тестов и как заглушка в UI. |
 
-Для реального UI файловый `IRecordStore` (JSON/реестр) реализуется **вне** `MinesweeperCore` — в соответствующем UI-проекте или отдельной библиотеке.
+Для реального UI файловый `IRecordStore` (JSON/реестр) реализуется **вне** `MinesweeperCore`.
+В текущем решении он реализован в проекте MinesweeperWinForms как JsonRecordStore (сохраняет данные в %LocalAppData%\Minesweeper\records.json).
 
 ### `Events/`
 
@@ -71,7 +72,8 @@
 
 ## Как UI работает с ядром
 
-1. UI создаёт `GameEngine`, передавая ему `IRandomProvider` и `IRecordStore`.
+1. UI создаёт `GameEngine`, передавая ему `IRandomProvider` (обычно `SystemRandomProvider`) и
+`IRecordStore` (в WinForms это `JsonRecordStore`, в тестах — `InMemoryRecordStore`).
 2. Вызывает `StartNewGame(settings)` при старте или новой игре.
 3. Для отрисовки запрашивает `GetCell(point)` — получает `CellInfo` (координаты, состояние, содержимое, число соседних мин) и рисует по нему.
 4. На клик вызывает `OpenCell(point)` (левая кнопка) или `CycleMark(point)`
@@ -84,6 +86,14 @@
 - UI не считает мины вокруг клетки, не делает каскадное открытие, не решает, победил игрок или нет — всё это делает `GameEngine`.
 - UI работает только с `CellInfo`, `GameEngine` и аргументами событий. Внутренние модели (`Cell`, `Board`) UI не трогает.
 - UI не ссылается на WinForms / MonoGame из ядра — наоборот, не бывает.
+
+### Структура `MinesweeperWinForms`
+
+- `MainForm.cs` — главное окно, отрисовка поля, обработка ввода.
+- `RecordsForm.cs` — таблица рекордов (3 вкладки по уровням сложности).
+- `AboutForm.cs` — окно «О программе».
+- `NamePromptForm.cs` — запрос имени при победе.
+- `JsonRecordStore.cs` — сохранение рекордов в `%LocalAppData%`.
 
 ## Правила для ядра
 

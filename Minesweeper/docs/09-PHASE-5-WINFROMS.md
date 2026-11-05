@@ -1,405 +1,164 @@
 # 09 — Phase 5: WinForms UI
 
 Спецификация реализации WinForms-фронтенда поверх готового ядра `MinesweeperCore`.
-Стабильное API (94 теста, 100% покрытие правил `02-GAME-RULES.md`) — UI его **только потребляет**.
+Стабильное API ядра (105 тестов) — UI его **только потребляет**.
 
 ## 1. Цель Phase 5
 
 Запускаемое WinForms-приложение, в котором можно сыграть полную партию:
-
-- Поле рисуется по `CellInfo` и ассетам из `assets/`.
-- Левый клик открывает клетку, правый — циклически меняет метку.
+- Поле рисуется по `CellInfo` и встроенным ассетам.
+- Левый клик открывает клетку (по отпусканию), правый — циклически меняет метку.
 - Смайлик-кнопка показывает состояние: `smiley` / `smiley_oh` / `smiley_win` / `smiley_lose`.
 - Счётчик мин и таймер обновляются в реальном времени.
-- Меню позволяет начать новую игру на Beginner / Intermediate / Expert / Custom.
+- Работают меню настроек сложности, окно «О программе» и таблица рекордов с сохранением в файл.
 
-**Вне scope Phase 5:** таблица рекордов (сохраним на Phase 7), звуки, анимации, темы оформления.
+**Вне scope Phase 5:** звуки, анимации, темы оформления.
 
 ## 2. Архитектура UI
 
-WinForms-проект — **тонкий слой**. Вся логика — в `GameEngine`. UI:
+WinForms-проект разбит на несколько файлов (все в `src/MinesweeperWinForms/`):
+- `MainForm.cs` — главная форма, отрисовка поля и игровой цикл.
+- `RecordsForm.cs` — окно таблицы рекордов (вкладки для уровней).
+- `AboutForm.cs` — окно «О программе».
+- `NamePromptForm.cs` — диалог ввода имени при установлении рекорда.
+- `JsonRecordStore.cs` — реализация `IRecordStore` (сохранение в JSON).
 
-1. Подписывается на события движка (`CellChanged`, `CellsRevealed`, `GameStateChanged`).
-2. По событию вызывает `Invalidate()` — перерисовывает поле.
-3. В `OnPaint` запрашивает `engine.GetCell(point)` и рисует по таблице §16.3 `02-GAME-RULES.md`.
-4. В обработчиках мыши вызывает `engine.OpenCell(point)` / `engine.CycleMark(point)`.
-5. В `Timer.Tick` читает `engine.Elapsed` и обновляет `Label`.
+Главная форма (`MainForm`) — **тонкий слой**. Вся игровая логика — в `GameEngine`. UI подписывается на события и вызывает `Invalidate()`.
 
-**Запрещено** в UI-проекте:
-- Считать `AdjacentMines`, `IsMine`, проверять победу/поражение.
-- Менять `CellState` напрямую.
-- Хранить копию состояния поля (только `engine.GetAllCells()` при перерисовке).
+## 3. Ассеты (Встроенные ресурсы)
 
-## 3. Ассеты
+Картинки **не копируются** в папку с `.exe`, чтобы пользователь не мог их случайно удалить или испортить. Они встраиваются в `MinesweeperWinForms.dll`.
 
-### 3.1. Копирование
-
-Все файлы из `assets/*.png` копируются в `src/MinesweeperWinForms/Resources/`.
-`assets/icon.ico` — в `src/MinesweeperWinForms/Resources/icon.ico`.
-
-**Не менять имена** — код ссылается по имени.
-
-### 3.2. Включение в сборку
-
-В `MinesweeperWinForms.csproj` добавить:
-
+### 3.1. Подключение в `.csproj`
 ```xml
+<ItemGroup>
+  <EmbeddedResource Include="Resources\*.png" LogicalName="Resources.%(Filename)%(Extension)" />
+</ItemGroup>
 <PropertyGroup>
   <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
 </PropertyGroup>
-
-<ItemGroup>
-  <Content Include="Resources\*.png">
-    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-  </Content>
-</ItemGroup>
 ```
 
-В рантайме ассеты лежат в `{AppContext.BaseDirectory}/Resources/`.
-
-### 3.3. Загрузка в коде
-
-Один статический кэш `ImageCache` (внутри `Form1.cs` или отдельный класс):
+### 3.2. Загрузка в коде
+Кэш `_imageCache` предотвращает утечки памяти и повторное чтение ресурсов. 
+*Внимание:* `Bitmap(stream)` держит поток открытым, поэтому создаётся копия через `new Bitmap(temp)`.
 
 ```csharp
-private static readonly Dictionary<string, Image> _imageCache = new();
-
 private static Image LoadImage(string name)
 {
-    if (_imageCache.TryGetValue(name, out var cached))
-        return cached;
-    var path = Path.Combine(AppContext.BaseDirectory, "Resources", name);
-    var img = Image.FromFile(path);
+    if (_imageCache.TryGetValue(name, out var cached)) return cached;
+    var asm = typeof(MainForm).Assembly;
+    using var stream = asm.GetManifestResourceStream($"Resources.{name}");
+    if (stream == null) return new Bitmap(24, 24);
+    using var temp = new Bitmap(stream);
+    var img = new Bitmap(temp);
     _imageCache[name] = img;
     return img;
 }
 ```
 
-`Image.FromFile` держит файл залоченным — это нормально для игры, файлы не меняются.
+## 4. Компоновка формы и DPI
 
-## 4. Инициализация `GameEngine`
+- `AutoScaleMode = AutoScaleMode.None` — **критически важно**. Отключает DPI-масштабирование Windows, чтобы клетки всегда оставались ровно 24×24 пикселя.
+- `FormBorderStyle = FixedSingle`, `MaximizeBox = false`.
+- `TopPanel` (`Dock = Top`): высота **48 px** (не 64, чтобы не было лишних отступов).
+- `BoardPanel` (`Dock = Fill`): кастомный класс `BufferedPanel : Panel` с `DoubleBuffered = true`.
+- Смайлик и таймеры центрируются в `TopPanel` через событие `Resize`.
 
-В `Form1`:
-
-```csharp
-private readonly GameEngine _engine;
-
-public Form1()
-{
-    InitializeComponent();
-
-    _engine = new GameEngine(
-        new SystemRandomProvider(),
-        new InMemoryRecordStore());
-
-    _engine.CellChanged += (s, e) => Invalidate();
-    _engine.CellsRevealed += (s, e) => Invalidate();
-    _engine.GameStateChanged += OnGameStateChanged;
-    _engine.BoardGenerated += (s, e) => UpdateMineCounter();
-
-    _engine.StartNewGame(DifficultyPresets.Beginner);
-    ApplyLayout();
-}
-```
-
-**`IRecordStore`:** в Phase 5 используем `InMemoryRecordStore` (заглушка). Файловый сторож — Phase 7.
-
-## 5. Форма: layout
-
-Структура формы:
-
-```
-┌─────────────────────────────────────┐
-│  [007]      [🙂]        [042]        │  ← TopPanel (высота 64)
-├─────────────────────────────────────┤
-│                                     │
-│         [Поле W × H клеток]         │  ← BoardPanel (занимает всё остальное)
-│                                     │
-└─────────────────────────────────────┘
-```
-
-- **`TopPanel`** — `Panel` высотой 64 px, `Dock = Top`. Внутри три элемента:
-  - `_mineCounter` — `PictureBox` слева, 3 LED-цифры (`timer_N.png` + `minus.png`).
-  - `_smileyButton` — `Button` 40×40 по центру, `Image = smiley.png`. По клику → `StartNewGame(_engine.Settings)`.
-  - `_timerDisplay` — `PictureBox` справа, 3 LED-цифры.
-- **`BoardPanel`** — `Panel`, `Dock = Fill`, `DoubleBuffered = true`. Все клики и отрисовка — здесь.
-
-Клетка — **24×24 px** (ассеты это поддерживают). Размер `BoardPanel` = `Width × 24` на `Height × 24`.
-
-Пересчёт размеров окна при `StartNewGame`:
-
-```csharp
-private void ApplyLayout()
-{
-    int boardW = _engine.Width * CellSize;
-    int boardH = _engine.Height * CellSize;
-    _boardPanel.Size = new Size(boardW, boardH);
-    ClientSize = new Size(boardW, boardH + TopPanelHeight);
-    _boardPanel.Invalidate();
-    UpdateMineCounter();
-    UpdateTimer();
-}
-```
-
-## 6. Отрисовка поля
+## 5. Отрисовка поля
 
 `_boardPanel.Paint += BoardPanel_Paint;`
+Внутри цикла запрашивается `_engine.GetCell(...)` и вызывается `DrawCell`.
+
+**Отрисовка триггерной мины:**
+При `Lost` триггерная мина имеет `State == Opened` и `Content == Mine`. Чтобы нарисовать `cell_exploded.png` вместо обычного `bomb.png`, `MainForm` хранит `_triggerCell = e.TriggerCell?.Position` из события `GameStateChanged`. В `DrawCell` проверяется `info.Position == _triggerCell`.
+
+## 6. Ввод (Классическое поведение мыши)
+
+В отличие от старой спецификации, клетка **не открывается** по `MouseDown`. Используется классическое поведение Windows XP:
+1. `MouseDown` (ЛКМ) — смайлик меняется на `smiley_oh.png`.
+2. `MouseUp` (ЛКМ) — смайлик возвращается в норму, и **только тогда** открывается клетка под курсором (может быть уже другая клетка, если игрок вел мышь с зажатой кнопкой).
+3. `MouseEnter` / `MouseLeave` — корректно обрабатывают зажатие и отпускание кнопки за пределами поля.
 
 ```csharp
-private const int CellSize = 24;
-
-private void BoardPanel_Paint(object sender, PaintEventArgs e)
+private void BoardPanel_MouseUp(object? sender, MouseEventArgs e)
 {
-    for (int x = 0; x < _engine.Width; x++)
-        for (int y = 0; y < _engine.Height; y++)
-        {
-            var info = _engine.GetCell(new CellPoint(x, y));
-            var rect = new Rectangle(x * CellSize, y * CellSize, CellSize, CellSize);
-            DrawCell(e.Graphics, rect, info);
-        }
-}
-
-private void DrawCell(Graphics g, Rectangle rect, CellInfo info)
-{
-    switch (info.State)
-    {
-        case CellState.Closed:
-            g.DrawImage(LoadImage("cell_closed.png"), rect);
-            break;
-
-        case CellState.Flagged:
-            g.DrawImage(LoadImage("cell_closed.png"), rect);
-            g.DrawImage(LoadImage("cell_flag.png"), rect);
-            break;
-
-        case CellState.Question:
-            g.DrawImage(LoadImage("cell_closed.png"), rect);
-            g.DrawImage(LoadImage("cell_question.png"), rect);
-            break;
-
-        case CellState.WrongFlag:
-            g.DrawImage(LoadImage("cell_wrong_flag.png"), rect);
-            break;
-
-        case CellState.Opened:
-            g.DrawImage(LoadImage("cell_empty.png"), rect);
-            if (info.Content == CellContent.Number && info.AdjacentMines >= 1 && info.AdjacentMines <= 8)
-                g.DrawImage(LoadImage($"digit_{info.AdjacentMines}.png"), rect);
-            else if (info.Content == CellContent.Mine)
-                g.DrawImage(LoadImage("bomb.png"), rect);
-            break;
-    }
-}
-```
-
-**Взрыв (триггерная клетка).** Триггерная мина при `Lost` — это `Opened + Mine`. По §16.2 `02-GAME-RULES.md` её нужно рисовать как `cell_exploded.png`, а не `cell_empty + bomb`. Как отличить:
-
-- UI хранит поле `CellPoint? _triggerCell`, заполняемое из `GameStateChangedEventArgs.TriggerCell?.Position` при `Lost`.
-- В `DrawCell`, если `info.Position == _triggerCell` → `cell_exploded.png`.
-
-Иначе при `Lost` рисуем всё как обычно (`cell_empty + bomb`).
-
-## 7. Ввод
-
-`_boardPanel.MouseDown += BoardPanel_MouseDown;`
-
-**Правый клик до первого открытия** ставит метку, игра остаётся `NotStarted`.
-Это корректно: `CycleMark` разрешён в `NotStarted` (§7 `02-GAME-RULES.md`).
-
-```csharp
-private void BoardPanel_MouseDown(object sender, MouseEventArgs e)
-{
-    int x = e.X / CellSize;
-    int y = e.Y / CellSize;
-    if (x < 0 || x >= _engine.Width || y < 0 || y >= _engine.Height)
-        return;
-
-    var point = new CellPoint(x, y);
-
     if (e.Button == MouseButtons.Left)
     {
-        _smileyButton.Image = LoadImage("smiley_oh.png");
-        _engine.OpenCell(point);
-    }
-    else if (e.Button == MouseButtons.Right)
-    {
-        _engine.CycleMark(point);
-        UpdateMineCounter();
-    }
-}
-```
+        if (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted)
+            SetSmiley("smiley.png");
 
-`_boardPanel.MouseUp += (s, e) =>`:
-- Если `GameState == InProgress` / `NotStarted` — вернуть `smiley.png`.
-- Если `GameState == Won` / `Lost` — **не** сбрасывать смайлик (он уже `smiley_win.png` / `smiley_lose.png`).
-
-**Важно:** `MouseUp` не должен менять состояние поля. Только визуально возвращает смайлик.
-
-## 8. Таймер
-
-`System.Windows.Forms.Timer` в `Form1`:
-
-```csharp
-private readonly System.Windows.Forms.Timer _timer = new() { Interval = 100 };
-
-// В конструкторе:
-_timer.Tick += (s, e) => UpdateTimer();
-_timer.Start();
-
-private void UpdateTimer()
-{
-    var seconds = (int)_engine.Elapsed.TotalSeconds;
-    if (seconds > 999) seconds = 999;
-    _timerDisplay.Image = RenderLedCounter(seconds, 3);
-}
-```
-
-`RenderLedCounter(int value, int digits)` — склеивает `digits` картинок `timer_N.png` горизонтально в один `Bitmap`:
-
-```csharp
-private Image RenderLedCounter(int value, int digits)
-{
-    var bmp = new Bitmap(digits * 24, 32);
-    using var g = Graphics.FromImage(bmp);
-    var s = value.ToString().PadLeft(digits, '0');
-    for (int i = 0; i < digits; i++)
-        g.DrawImage(LoadImage($"timer_{s[i]}.png"), i * 24, 0);
-    return bmp;
-}
-```
-
-Таймер работает всегда — `engine.Elapsed` сам возвращает фиксированное значение при `Won`/`Lost` (§14 `02-GAME-RULES.md`), UI не нужно останавливать `_timer`.
-
-## 9. Счётчик мин
-
-```csharp
-private void UpdateMineCounter()
-{
-    int remaining = _engine.RemainingMines;
-
-    if (remaining >= 0)
-    {
-        _mineCounter.Image = RenderLedCounter(remaining, 3);
-    }
-    else
-    {
-        // Отрицательное значение: minus.png + цифры модуля (§15 02-GAME-RULES.md).
-        int abs = Math.Abs(remaining);
-        var bmp = new Bitmap(3 * 24, 32);
-        using var g = Graphics.FromImage(bmp);
-        g.DrawImage(LoadImage("minus.png"), 0, 0);
-        var s = abs.ToString().PadLeft(2, '0');
-        g.DrawImage(LoadImage($"timer_{s[0]}.png"), 24, 0);
-        g.DrawImage(LoadImage($"timer_{s[1]}.png"), 48, 0);
-        _mineCounter.Image = bmp;
+        int x = e.X / CellSize, y = e.Y / CellSize;
+        if (x >= 0 && x < _engine.Width && y >= 0 && y < _engine.Height)
+            _engine.OpenCell(new CellPoint(x, y));
     }
 }
 ```
 
-`RemainingMines` — O(1) (`MineCount − Board.FlaggedCount`). **Не обнуляется** при `Won`/`Lost`. Может быть отрицательным. Если игрок выиграл без флагов, счётчик показывает `MineCount`.
+## 7. Кнопка смайлика
 
-**`Question` НЕ считается флагом** (см. §15 `02-GAME-RULES.md`). Только `Flagged`.
+- Используется стандартная `Button` (`FlatStyle.Standard`, размер `32x32`).
+- Чтобы картинка не обрезалась рамками кнопки, она предварительно скейлится до `28x28` и кэшируется в `_smileyCache`.
+- Таймер и счётчик мин имеют высоту `32`, поэтому кнопка идеально выровнена по ним.
 
-**Освобождение старых Bitmap:** перед заменой `_mineCounter.Image` / `_timerDisplay.Image` проверять, что старое значение — `Bitmap`, и вызывать `Dispose()`, чтобы не утекать GDI-ресурсы.
+## 8. Таймер и Счётчик мин
 
-## 10. Смайлик-кнопка
+`RenderLedCounter(int value, int digits)` — склеивает картинки `timer_N.png` горизонтально.
+- **Обязательно:** `g.InterpolationMode = NearestNeighbor` и явное указание `Rectangle(i * 24, 0, 24, 32)`. Без этого GDI+ может исказить пиксель-арт.
+- Старые `Bitmap` **обязательно** освобождаются через `Dispose()`, чтобы не текла память GDI+.
+- Отрицательный счётчик мин рисует `minus.png` и две цифры.
 
-- `smiley.png` — по умолчанию, во время `InProgress` и `NotStarted`.
-- `smiley_oh.png` — пока зажата левая кнопка мыши на поле (см. §7).
-- `smiley_win.png` — после `GameStateChanged(Won)`.
-- `smiley_lose.png` — после `GameStateChanged(Lost)`.
+## 9. Таблица рекордов и диалоги
 
-```csharp
-private void OnGameStateChanged(object? sender, GameStateChangedEventArgs e)
-{
-    if (e.NewState == GameState.Won)
-        _smileyButton.Image = LoadImage("smiley_win.png");
-    else if (e.NewState == GameState.Lost)
-    {
-        _smileyButton.Image = LoadImage("smiley_lose.png");
-        // Запомнить триггерную клетку для отрисовки cell_exploded
-        _triggerCell = e.TriggerCell?.Position; // CellInfo.Position, не Point
-    }
+### 9.1. `JsonRecordStore`
+Рекорды сохраняются в `%LocalAppData%\Minesweeper\records.json`. Это предотвращает потерю файлов при переустановке игры. Сохранение происходит через `System.Text.Json`.
 
-    UpdateMineCounter();
-    UpdateTimer();
-    _boardPanel.Invalidate();
-}
-```
+### 9.2. Окна (`RecordsForm`, `AboutForm`)
+- Открываются через `ShowDialog(this)`.
+- Закрываются по клавише `Esc` (перехват через `ProcessCmdKey`).
+- В `RecordsForm` отображается топ-5 для трёх уровней. Если имя пустое — пишется «Аноним».
 
-По клику на смайлик — `StartNewGame(_engine.Settings)` + сброс `_triggerCell = null`.
+### 9.3. Ввод имени (`NamePromptForm`)
+Архитектурный компромисс: ядро `GameEngine` сохраняет рекорд (с пустым именем) **до** того, как вызовет событие `GameStateChanged(Won)`. 
+Поэтому `MainForm` делает следующее:
+1. Ловит `GameStateChanged(Won)`.
+2. Показывает `NamePromptForm`.
+3. Если игрок ввел имя, вызывает `jsonStore.RenameRecord(...)`.
+4. Метод `RenameRecord` ищет запись с таким же временем (`Math.Abs(e.TimeSeconds - timeSeconds) < 0.1`) и перезаписывает имя в JSON.
+5. Сразу открывает `RecordsForm`, чтобы игрок увидел свой результат.
 
-## 11. Меню
-
-`MenuStrip` сверху формы:
+## 10. Меню
 
 ```
 Игра
-├── Новая (F2)
+├── Новая игра
 ├── ─────
 ├── Новичок
 ├── Любитель
 ├── Профессионал
 ├── ─────
-└── Пользовательский...
+└── Выход
+
+Справка
+├── Лучшие результаты
+├── ─────
+└── О программе
 ```
 
-Обработчики:
+## 11. События движка — что делает UI
 
-```csharp
-private void StartGame(GameSettings settings)
-{
-    _triggerCell = null;
-    _engine.StartNewGame(settings);
-    _smileyButton.Image = LoadImage("smiley.png");
-    ApplyLayout();
-}
-
-private void OnBeginner(object s, EventArgs e) => StartGame(DifficultyPresets.Beginner);
-private void OnIntermediate(object s, EventArgs e) => StartGame(DifficultyPresets.Intermediate);
-private void OnExpert(object s, EventArgs e) => StartGame(DifficultyPresets.Expert);
-```
-
-**Custom-диалог:** в Phase 5 — минимальный: `Form` с тремя `NumericUpDown`
-(Width, Height, MineCount) и кнопкой OK. **Границы в UI — классические:**
-`Width 9..30`, `Height 9..24`, `MineCount` по формуле §12.2 `02-GAME-RULES.md`.
-Ядро технически допускает `3..1000 × 3..1000`, но UI не должен это разрешать
-игроку. Валидация — при создании `GameSettings` (выбросит
-`ArgumentOutOfRangeException`, показать `MessageBox`).
-
-## 12. События движка — какие и зачем
-
-| Событие | Что делает UI |
+| Событие | Действие UI |
 |---|---|
 | `CellChanged` | `_boardPanel.Invalidate()`, `UpdateMineCounter()` |
 | `CellsRevealed` | `_boardPanel.Invalidate()` |
-| `GameStateChanged` | смена смайлика, запоминание `TriggerCell` при `Lost`, финальный `Invalidate()` |
-| `BoardGenerated` | `UpdateMineCounter()` (после первого клика) |
+| `BoardGenerated` | `UpdateMineCounter()` |
+| `GameStateChanged` | Смена смайлика. При `Lost` — сохранение `_triggerCell`. При `Won` — запрос имени и открытие таблицы рекордов. |
 
-**`BoardGenerated`** важен: до первого клика `MineCount` известен, но `Flagged = 0`, и счётчик уже показывает `MineCount`. Не критично, но не помешает.
+## 12. Антипаттерны (не делать)
 
-## 13. Acceptance — визуальные критерии (ручное тестирование)
-
-После реализации агент **не может** проверить это юнит-тестами. Проверяет человек.
-
-- [ ] Запуск: окно с полем 9×9 Beginner, таймер `000`, счётчик `010`.
-- [ ] Первый клик: клетка открывается (или каскад), таймер тикает.
-- [ ] Правый клик циклически: флаг → вопрос → пусто → флаг.
-- [ ] Правый клик на мине при победе: правильный флаг остаётся.
-- [ ] Клик в мину: поле показывает `cell_exploded` на триггере, `bomb` на остальных минах, `cell_wrong_flag` на ошибочных флагах, смайлик → `smiley_lose`.
-- [ ] Все безопасные открыты: все мины в флагах (`cell_flag`), смайлик → `smiley_win`. Счётчик при этом показывает `MineCount − поставленные_флаги` (не обязательно `0`).
-- [ ] Счётчик: после каждого правого клика пересчитывается (`Flagged` уменьшает).
-- [ ] Счётчик отрицательный: если поставить 11 флагов на 10 мин, показано `-01` (`minus.png` + цифры).
-- [ ] Смена сложности в меню: новое поле, счётчики сброшены, таймер `000`.
-- [ ] Кнопка «Новая» / клик по смайлику: `StartNewGame` с текущими `Settings`, всё сброшено.
-- [ ] Изменение размера окна: `FormBorderStyle.FixedSingle` — нельзя, поле фиксировано.
-
-## 14. Антипаттерны (не делать)
-
-- **Не хранить `Board` копию в UI.** Единственный источник — `engine.GetCell(point)` в `OnPaint`.
-- **Не считать `AdjacentMines` в UI.** Ядро отдаёт `CellInfo.AdjacentMines`.
-- **Не менять `CellState`** из обработчиков. Только через `engine.OpenCell` / `engine.CycleMark`.
-- **Не реализовывать каскад в UI.** Ядро эмитит `CellsRevealed` с готовым списком.
-- **Не рисовать `cell_exploded` для всех мин при `Lost`.** Только для триггерной (`TriggerCell` из события). Остальные — `cell_empty + bomb` (§16.2 `02-GAME-RULES.md`).
-- **Не считать `Question` за флаг в счётчике.** Только `Flagged` (§15).
-- **Не останавливать таймер вручную при `Won`/`Lost`.** `engine.Elapsed` уже фиксирован (§14)
+- **Не копировать `*.png` в output.** Только `EmbeddedResource`.
+- **Не открывать клетку на `MouseDown`.** Только на `MouseUp`, чтобы работало перетаскивание.
+- **Не хранить копию `Board` в UI.** Единственный источник — `engine.GetCell(point)`.
+- **Не рисовать `cell_exploded` для всех мин.** Только для `_triggerCell`.
+- **Не забывать `Dispose()` для старых `Bitmap` счётчиков.**
+- **Не включать `AutoScaleMode.Font` или `Dpi`.** Только `None`, иначе поле «поплывет».

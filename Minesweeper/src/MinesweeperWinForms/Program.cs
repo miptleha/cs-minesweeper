@@ -11,6 +11,6 @@ static class Program
         // Настройка конфигурации приложения (например, DPI или шрифт по умолчанию).
         // См. https://aka.ms/applicationconfiguration.
         ApplicationConfiguration.Initialize();
-        Application.Run(new Form1());
+        Application.Run(new MainForm());
     }    
 }
