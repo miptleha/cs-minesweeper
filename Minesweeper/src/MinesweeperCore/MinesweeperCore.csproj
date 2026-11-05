@@ -5,6 +5,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPublishable>false</IsPublishable>
+    <RootNamespace>MinesweeperCore</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="MinesweeperCore.Tests" />
+  </ItemGroup>
 
 </Project>

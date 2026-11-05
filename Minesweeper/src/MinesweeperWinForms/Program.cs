@@ -3,13 +3,13 @@ namespace MinesweeperWinForms;
 static class Program
 {
     /// <summary>
-    ///  The main entry point for the application.
+    ///  Точка входа приложения.
     /// </summary>
     [STAThread]
     static void Main()
     {
-        // To customize application configuration such as set high DPI settings or default font,
-        // see https://aka.ms/applicationconfiguration.
+        // Настройка конфигурации приложения (например, DPI или шрифт по умолчанию).
+        // См. https://aka.ms/applicationconfiguration.
         ApplicationConfiguration.Initialize();
         Application.Run(new Form1());
     }    

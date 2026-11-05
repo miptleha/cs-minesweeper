@@ -1,9 +1,10 @@
 <Solution>
-  <Folder Name="/src/" />
+  <Folder Name="/src/">
+    <Project Path="src/MinesweeperCore/MinesweeperCore.csproj" />
+    <Project Path="src/MinesweeperMonoGame/MinesweeperMonoGame.csproj" />
+    <Project Path="src/MinesweeperWinForms/MinesweeperWinForms.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MinesweeperCore.Tests/MinesweeperCore.Tests.csproj" />
   </Folder>
-  <Project Path="src/MinesweeperCore/MinesweeperCore.csproj" />
-  <Project Path="src/MinesweeperMonoGame/MinesweeperMonoGame.csproj" />
-  <Project Path="src/MinesweeperWinForms/MinesweeperWinForms.csproj" />
 </Solution>

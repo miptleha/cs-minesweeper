@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
 namespace MinesweeperMonoGame;
@@ -7,8 +6,10 @@ namespace MinesweeperMonoGame;
 public class Game1 : Game
 {
     private GraphicsDeviceManager _graphics;
-    private SpriteBatch _spriteBatch;
 
+    /// <summary>
+    /// Менеджер графики.
+    /// </summary>
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -18,24 +19,27 @@ public class Game1 : Game
 
     protected override void Initialize()
     {
-        // TODO: Add your initialization logic here
+        // Размер окна по умолчанию — 9×9 клеток по 32 пикселя + запас.
+        // Точные значения будут уточнены в Phase 6.
+        _graphics.PreferredBackBufferWidth = 320;
+        _graphics.PreferredBackBufferHeight = 360;
+        _graphics.ApplyChanges();
 
         base.Initialize();
     }
 
     protected override void LoadContent()
     {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-        // TODO: use this.Content to load your game content here
+        // TODO: загрузка контента через this.Content
     }
 
     protected override void Update(GameTime gameTime)
     {
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed ||
+            Keyboard.GetState().IsKeyDown(Keys.Escape))
             Exit();
 
-        // TODO: Add your update logic here
+        // TODO: логика обновления
 
         base.Update(gameTime);
     }
@@ -44,7 +48,7 @@ public class Game1 : Game
     {
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
-        // TODO: Add your drawing code here
+        // TODO: отрисовка
 
         base.Draw(gameTime);
     }

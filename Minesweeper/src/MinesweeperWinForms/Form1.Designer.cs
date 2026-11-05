@@ -3,14 +3,14 @@
 partial class Form1
 {
     /// <summary>
-    ///  Required designer variable.
+    ///  Переменная, необходимая дизайнеру.
     /// </summary>
     private System.ComponentModel.IContainer components = null;
 
     /// <summary>
-    ///  Clean up any resources being used.
+    ///  Освобождение используемых ресурсов.
     /// </summary>
-    /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+    /// <param name="disposing">true — освобождать управляемые ресурсы; иначе false.</param>
     protected override void Dispose(bool disposing)
     {
         if (disposing && (components != null))
@@ -23,8 +23,8 @@ partial class Form1
     #region Windows Form Designer generated code
 
     /// <summary>
-    ///  Required method for Designer support - do not modify
-    ///  the contents of this method with the code editor.
+    ///  Метод, необходимый дизайнеру. Не изменять вручную.
+    ///  Содержимое метода редактируется только в дизайнере.
     /// </summary>
     private void InitializeComponent()
     {
