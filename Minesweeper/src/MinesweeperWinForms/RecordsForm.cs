@@ -8,6 +8,11 @@ public class RecordsForm : Form
     public RecordsForm(IRecordStore recordStore)
     {
         Text = "Лучшие результаты";
+
+        // Включаем автоматическое DPI-масштабирование
+        AutoScaleMode = AutoScaleMode.Dpi;
+        AutoScaleDimensions = new SizeF(96F, 96F);
+
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
@@ -46,6 +51,7 @@ public class RecordsForm : Form
             HeaderStyle = ColumnHeaderStyle.Nonclickable
         };
 
+        // Ширины колонок тоже будут автоматически отмасштабированы, так как они заданы в логических пикселях
         listView.Columns.Add("Место", 50);
         listView.Columns.Add("Имя", 130);
         listView.Columns.Add("Время", 80);

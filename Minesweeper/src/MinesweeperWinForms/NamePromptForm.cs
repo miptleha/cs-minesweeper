@@ -7,11 +7,17 @@ public class NamePromptForm : Form
     public NamePromptForm()
     {
         Text = "Новый рекорд!";
+
+        // Включаем автоматическое DPI-масштабирование
+        AutoScaleMode = AutoScaleMode.Dpi;
+        AutoScaleDimensions = new SizeF(96F, 96F);
+
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
         ClientSize = new Size(250, 120);
+        ShowInTaskbar = false;
 
         var label = new Label { Text = "Введите ваше имя:", Location = new Point(10, 10), AutoSize = true };
         var textBox = new TextBox { Location = new Point(10, 30), Width = 210, Text = "Игрок" };

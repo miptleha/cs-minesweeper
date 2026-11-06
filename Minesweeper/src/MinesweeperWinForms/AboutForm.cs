@@ -7,6 +7,11 @@ public class AboutForm : Form
     public AboutForm()
     {
         Text = "О программе";
+
+        // Включаем автоматическое DPI-масштабирование
+        AutoScaleMode = AutoScaleMode.Dpi;
+        AutoScaleDimensions = new SizeF(96F, 96F);
+
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
