@@ -268,7 +268,10 @@ public class MainForm : Form
             _downButtons &= ~e.Button;
 
         // Второй MouseUp после сработавшего аккорда — гасим.
-        if (_suppressNextMouseUp)
+        // НО только если это не начало нового аккорда: если пользователь снова
+        // нажал ЛКМ при зажатой ПКМ (_chordCandidate задан), это новый аккорд,
+        // и его нужно обработать, а не подавлять.
+        if (_suppressNextMouseUp && _chordCandidate is null)
         {
             _suppressNextMouseUp = false;
             ResetSmileyForCurrentState();
