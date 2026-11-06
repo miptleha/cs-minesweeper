@@ -117,6 +117,7 @@
 | `MinePlacement.PlaceMines` | O(mineCount × 8) | **один раз за партию** |
 | `RevealService.RevealAll` | O(TotalCells) | **один раз за партию** (`Lost`) |
 | `Board.Reset` / `new Board(...)` | O(TotalCells) | **один раз за партию** (`StartNewGame`) |
+| `GameEngine.Chord` | O(8) + каскад. Открывает соседей цифровой клетки при совпадении флагов. Эмитит батч `CellsRevealed`. |
 
 Ключевые решения:
 

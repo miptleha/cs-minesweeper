@@ -23,6 +23,15 @@ public class MainForm : Form
     private static readonly Dictionary<string, Image> _imageCache = new();
     private static readonly Dictionary<string, Image> _smileyCache = new();
 
+    // Поля для обработки мыши и аккордов
+    private MouseButtons _downButtons = MouseButtons.None;
+    private CellPoint? _chordCandidate = null;
+    private bool _suppressNextMouseUp = false;
+
+    // Поля для ручного определения двойного клика
+    private CellPoint? _lastClickPoint = null;
+    private DateTime _lastClickTime = DateTime.MinValue;
+
     private float ScaleFactor => DeviceDpi / 96f;
     private int GetCellSize() => (int)(24 * ScaleFactor);
 
@@ -140,7 +149,6 @@ public class MainForm : Form
     {
         float scale = ScaleFactor;
 
-        // Масштабируем панель и элементы
         _topPanel.Height = (int)(48 * scale);
 
         _mineCounter.Size = new Size((int)(72 * scale), (int)(32 * scale));
@@ -156,6 +164,11 @@ public class MainForm : Form
     private void StartGame(GameSettings settings)
     {
         _triggerCell = null;
+        _downButtons = MouseButtons.None;
+        _chordCandidate = null;
+        _suppressNextMouseUp = false;
+        _lastClickPoint = null;
+
         _engine.StartNewGame(settings);
 
         int cellSize = GetCellSize();
@@ -206,7 +219,6 @@ public class MainForm : Form
         if (_smileyCache.TryGetValue(name, out var cached)) return cached;
         var original = LoadImage(name);
 
-        // Масштабируем картинку смайлика
         int size = (int)(28 * ScaleFactor);
         var bmp = new Bitmap(size, size);
         using var g = Graphics.FromImage(bmp);
@@ -219,48 +231,119 @@ public class MainForm : Form
 
     private void BoardPanel_MouseDown(object? sender, MouseEventArgs e)
     {
-        if (e.Button == MouseButtons.Left)
+        // Средняя кнопка — аккорд сразу (3-finger tap на тачпаде).
+        if (e.Button == MouseButtons.Middle)
         {
-            // Меняем смайлик на "удивленный" ТОЛЬКО если игра еще идет
-            if (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted)
-                SetSmiley("smiley_oh.png");
-        }
-        else if (e.Button == MouseButtons.Right)
-        {
-            int cellSize = GetCellSize();
-            int x = e.X / cellSize, y = e.Y / cellSize;
-            if (x >= 0 && x < _engine.Width && y >= 0 && y < _engine.Height)
+            var midPoint = ToCellPoint(e.X, e.Y);
+            if (midPoint.HasValue)
             {
-                _engine.CycleMark(new CellPoint(x, y));
+                _engine.Chord(midPoint.Value);
                 UpdateMineCounter();
             }
+            return;
+        }
+
+        if (e.Button == MouseButtons.Left || e.Button == MouseButtons.Right)
+            _downButtons |= e.Button;
+
+        // Обе кнопки зажаты — потенциальный аккорд ЛКМ+ПКМ. 
+        // Запоминаем клетку, где произошло второе нажатие.
+        if ((_downButtons & MouseButtons.Left) != 0 && (_downButtons & MouseButtons.Right) != 0)
+        {
+            _chordCandidate = ToCellPoint(e.X, e.Y);
+        }
+
+        // Смайлик «о» — только для ЛКМ и только если это не начало аккорда.
+        if (e.Button == MouseButtons.Left
+            && _chordCandidate is null
+            && (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted))
+        {
+            SetSmiley("smiley_oh.png");
         }
     }
 
     private void BoardPanel_MouseUp(object? sender, MouseEventArgs e)
     {
+        if (e.Button == MouseButtons.Left || e.Button == MouseButtons.Right)
+            _downButtons &= ~e.Button;
+
+        // Второй MouseUp после сработавшего аккорда — гасим.
+        if (_suppressNextMouseUp)
+        {
+            _suppressNextMouseUp = false;
+            ResetSmileyForCurrentState();
+            return;
+        }
+
+        // Аккорд по ЛКМ+ПКМ: срабатывает при отпускании первой из двух зажатых.
+        if (_chordCandidate is CellPoint chordCell)
+        {
+            _chordCandidate = null;
+            _suppressNextMouseUp = true;
+            _engine.Chord(chordCell);
+            UpdateMineCounter();
+            ResetSmileyForCurrentState();
+            return;
+        }
+
         if (e.Button == MouseButtons.Left)
         {
-            // Возвращаем смайлик в зависимости от текущего состояния игры
-            if (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted)
-                SetSmiley("smiley.png");
-            else if (_engine.State == GameState.Lost)
-                SetSmiley("smiley_lose.png");
-            else if (_engine.State == GameState.Won)
-                SetSmiley("smiley_win.png");
+            ResetSmileyForCurrentState();
 
-            int cellSize = GetCellSize();
-            int x = e.X / cellSize, y = e.Y / cellSize;
-            if (x >= 0 && x < _engine.Width && y >= 0 && y < _engine.Height)
+            var point = ToCellPoint(e.X, e.Y);
+            if (!point.HasValue)
+                return;
+
+            if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
             {
-                _engine.OpenCell(new CellPoint(x, y));
+                // Ctrl+ЛКМ = аналог ПКМ (CycleMark). Флаги/вопросы.
+                _engine.CycleMark(point.Value);
             }
+            else
+            {
+                // КАСТОМНОЕ ОПРЕДЕЛЕНИЕ ДВОЙНОГО КЛИКА (Устойчиво к сдвигу тачпада)
+                DateTime now = DateTime.Now;
+                bool isDoubleClick = _lastClickPoint.HasValue
+                                     && _lastClickPoint.Value == point.Value
+                                     && (now - _lastClickTime).TotalMilliseconds <= SystemInformation.DoubleClickTime;
+
+                if (isDoubleClick)
+                {
+                    // Это двойной клик по той же клетке! Делаем аккорд.
+                    _engine.Chord(point.Value);
+                    _lastClickPoint = null; // Сбрасываем, чтобы тройной клик не сработал как еще один аккорд
+                }
+                else
+                {
+                    // Обычный одиночный клик — открываем клетку.
+                    _engine.OpenCell(point.Value);
+                    _lastClickPoint = point.Value;
+                    _lastClickTime = now;
+                }
+            }
+
+            UpdateMineCounter();
+        }
+        else if (e.Button == MouseButtons.Right)
+        {
+            // ПКМ: метка (как было, на MouseUp — нужно для детекции аккорда).
+            var point = ToCellPoint(e.X, e.Y);
+            if (!point.HasValue)
+                return;
+
+            _engine.CycleMark(point.Value);
+            UpdateMineCounter();
         }
     }
 
     private void BoardPanel_MouseEnter(object? sender, EventArgs e)
     {
-        if (Control.MouseButtons == MouseButtons.Left && (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted))
+        // Защита от «застрявших» кнопок (если отпустили за пределами панели).
+        if (Control.MouseButtons == MouseButtons.None)
+            _downButtons = MouseButtons.None;
+
+        if (Control.MouseButtons == MouseButtons.Left
+            && (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted))
             SetSmiley("smiley_oh.png");
     }
 
@@ -269,6 +352,30 @@ public class MainForm : Form
         if (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted)
             SetSmiley("smiley.png");
     }
+
+    // --- Вспомогательные методы для мыши ---
+
+    private CellPoint? ToCellPoint(int x, int y)
+    {
+        int cellSize = GetCellSize();
+        int cx = x / cellSize;
+        int cy = y / cellSize;
+        if (cx < 0 || cx >= _engine.Width || cy < 0 || cy >= _engine.Height)
+            return null;
+        return new CellPoint(cx, cy);
+    }
+
+    private void ResetSmileyForCurrentState()
+    {
+        SetSmiley(_engine.State switch
+        {
+            GameState.Won => "smiley_win.png",
+            GameState.Lost => "smiley_lose.png",
+            _ => "smiley.png"
+        });
+    }
+
+    // --------------------------------------
 
     private void BoardPanel_Paint(object? sender, PaintEventArgs e)
     {
@@ -384,8 +491,14 @@ public class MainForm : Form
         return img;
     }
 
+    // Панель с двойной буферизацией и отключенным фокусом
+    // (отключенный фокус убирает красную рамку)
     private sealed class BufferedPanel : Panel
     {
-        public BufferedPanel() => DoubleBuffered = true;
+        public BufferedPanel()
+        {
+            DoubleBuffered = true;
+            SetStyle(ControlStyles.Selectable, false);
+        }
     }
 }

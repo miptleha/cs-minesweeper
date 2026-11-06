@@ -26,7 +26,13 @@
   `Closed`/`Question` → `Opened`, а также ошибочные флаги (`Flagged` на безопасной → `WrongFlag`).
   `Question` на безопасной не входит — не меняется.
 - Одиночный клик по `Number`/`Mine` (без каскада) — эмитит `CellChanged`, **не** `CellsRevealed`.
-
+- Аккорд (`GameEngine.Chord`) без мин — эмитит **ровно одно** `CellsRevealed`.
+  **Ноль** `CellChanged`.
+- Аккорд с миной — `CellChanged` (триггер) → `CellsRevealed` (все мины + WrongFlag)
+  → `GameStateChanged(Lost)`. Порядок строгий, как при прямом клике в мину.
+- Аккорд, не выполнивший условия (`flags != number`, не Opened/Number,
+  не InProgress, нет закрытых соседей) — **ноль** событий.
+  
 ## Жизненный цикл
 
 - Все публичные методы после `Dispose` → `ObjectDisposedException`.

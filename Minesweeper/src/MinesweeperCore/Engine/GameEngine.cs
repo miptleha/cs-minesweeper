@@ -332,6 +332,125 @@ public sealed class GameEngine : IDisposable
         _records.AddRecord(entry);
     }
 
+    /// <summary>
+    /// Аккорд: открывает всех закрытых соседей клетки, если число флагов вокруг
+    /// равно цифре на клетке. Классическое поведение Windows XP.
+    /// Требует: State == InProgress, клетка Opened + Number, flags == AdjacentMines.
+    /// При неверных флагах — поражение (как при клике в мину).
+    /// Question-соседи открываются, Flagged — остаются.
+    /// </summary>
+    public void Chord(CellPoint point)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_state != GameState.InProgress)
+            return;
+
+        if (!_board.IsValid(point))
+            return;
+
+        var center = _board[point.X, point.Y];
+        if (center.State != CellState.Opened || center.Content != CellContent.Number)
+            return;
+
+        // Флаги вокруг (Question — не флаг).
+        int flags = 0;
+        foreach (var n in _board.GetValidNeighbors(point))
+            if (_board[n.X, n.Y].State == CellState.Flagged)
+                flags++;
+
+        // Классика: аккорд срабатывает только на точное равенство.
+        // Если флагов больше, чем цифра — ничего не делаем (игрок ошибся, пусть думает).
+        if (flags != center.AdjacentMines)
+            return;
+
+        // Соседи, которые будут открыты: Closed и Question (Question — «мягкая» метка,
+        // не блокирует открытие, см. §7 02-GAME-RULES.md).
+        var toOpen = new List<CellPoint>();
+        foreach (var n in _board.GetValidNeighbors(point))
+        {
+            var nc = _board[n.X, n.Y];
+            if (nc.State == CellState.Closed || nc.State == CellState.Question)
+                toOpen.Add(n);
+        }
+
+        if (toOpen.Count == 0)
+            return;
+
+        // Проверка на мину. Если есть — поражение сразу, остальные безопасные
+        // соседи НЕ открываются (классическое поведение: показан только взрыв + все мины).
+        CellPoint? triggeredMine = null;
+        foreach (var n in toOpen)
+        {
+            if (_board[n.X, n.Y].IsMine)
+            {
+                triggeredMine = n;
+                break;
+            }
+        }
+
+        if (triggeredMine is CellPoint mine)
+        {
+            // Открываем триггерную мину, эмитим CellChanged — как в OpenCell при клике в мину.
+            var change = _revealService.RevealCell(_board, mine, out _);
+            if (change == null) return; // защита; не должно случиться
+            var cellInfo = _board.GetCellInfo(mine);
+            CellChanged?.Invoke(this, new CellChangedEventArgs(change, cellInfo));
+
+            // RevealAll открывает все остальные непомеченные мины и помечает WrongFlag.
+            var revealedInfos = _revealService.RevealAll(_board);
+            CellsRevealed?.Invoke(this, new CellsRevealedEventArgs(revealedInfos));
+
+            _elapsed = Elapsed;
+            _state = GameState.Lost;
+            GameStateChanged?.Invoke(this, new GameStateChangedEventArgs(GameState.Lost, cellInfo));
+            return;
+        }
+
+        // Безопасно: открываем всех соседей. Empty — каскад; Number — одиночное.
+        // HashSet вместо List — каскады могут пересекаться, дедуп бесплатный.
+        var revealedSet = new HashSet<CellPoint>();
+        foreach (var n in toOpen)
+        {
+            var nc = _board[n.X, n.Y];
+            if (nc.State != CellState.Closed && nc.State != CellState.Question)
+                continue; // сосед уже открыт предыдущим каскадом в этом же аккорде
+
+            var change = _revealService.RevealCell(_board, n, out var content);
+            if (change == null) continue;
+
+            if (content == CellContent.Empty)
+            {
+                // CascadeReveal включает стартовую точку в результат.
+                foreach (var cp in _revealService.CascadeReveal(_board, n))
+                    revealedSet.Add(cp);
+            }
+            else
+            {
+                revealedSet.Add(n);
+            }
+        }
+
+        // Аккорд — «пакетное» действие, эмитим одно CellsRevealed (как каскад).
+        // UI перерисует всё поле по одному событию.
+        if (revealedSet.Count > 0 && CellsRevealed != null)
+        {
+            var infos = new List<CellInfo>(revealedSet.Count);
+            foreach (var p in revealedSet)
+                infos.Add(_board.GetCellInfo(p));
+            CellsRevealed?.Invoke(this, new CellsRevealedEventArgs(infos));
+        }
+
+        // Проверка победы: последняя безопасная могла открыться именно аккордом.
+        if (WinCondition.IsWon(_board, Settings.MineCount))
+        {
+            _elapsed = Elapsed;
+            _state = GameState.Won;
+            SaveRecord();
+            GameStateChanged?.Invoke(this, new GameStateChangedEventArgs(GameState.Won));
+        }
+    }
+
     public void Dispose()
     {
         _disposed = true;

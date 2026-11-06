@@ -1,2 +1,2 @@
-﻿using var game = new MinesweeperMonoGame.Game1();
+﻿using var game = new MinesweeperMonoGame.MinesweeperGame();
 game.Run();

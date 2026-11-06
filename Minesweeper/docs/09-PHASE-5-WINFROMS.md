@@ -73,26 +73,87 @@ private static Image LoadImage(string name)
 **Отрисовка триггерной мины:**
 При `Lost` триггерная мина имеет `State == Opened` и `Content == Mine`. Чтобы нарисовать `cell_exploded.png` вместо обычного `bomb.png`, `MainForm` хранит `_triggerCell = e.TriggerCell?.Position` из события `GameStateChanged`. В `DrawCell` проверяется `info.Position == _triggerCell`.
 
-## 6. Ввод (Классическое поведение мыши)
+## 6. Ввод (Классическое поведение мыши + альтернативы)
 
-В отличие от старой спецификации, клетка **не открывается** по `MouseDown`. Используется классическое поведение Windows XP:
-1. `MouseDown` (ЛКМ) — смайлик меняется на `smiley_oh.png`.
-2. `MouseUp` (ЛКМ) — смайлик возвращается в норму, и **только тогда** открывается клетка под курсором (может быть уже другая клетка, если игрок вел мышь с зажатой кнопкой).
-3. `MouseEnter` / `MouseLeave` — корректно обрабатывают зажатие и отпускание кнопки за пределами поля.
+Клетка **не открывается** по `MouseDown`. Используется классическое поведение
+Windows XP: открытие и постановка метки происходят по `MouseUp`. Это нужно,
+чтобы работало перетаскивание с зажатой кнопкой и чтобы отличить одиночный
+клик от начала аккорда.
+
+### 6.1. Итоговая раскладка ввода
+
+| Действие | Событие / модификатор | Результат |
+|---|---|---|
+| ЛКМ по клетке | `MouseUp`, `Left` | `GameEngine.OpenCell` |
+| ПКМ по клетке | `MouseUp`, `Right` | `GameEngine.CycleMark` |
+| **Ctrl+ЛКМ** по клетке | `MouseUp`, `Left` + `Control` | `GameEngine.CycleMark` |
+| Двойной ЛКМ по клетке | `MouseUp`, `Left`, `Clicks == 2` | 1-й клик: `OpenCell`; 2-й: `Chord` (если клетка стала `Number` и флаги совпали) |
+| ЛКМ+ПКМ одновременно | обе кнопки зажаты, отпускание любой | `GameEngine.Chord` |
+| Средняя кнопка | `MouseDown`, `Middle` | `GameEngine.Chord` |
+| ЛКМ по смайлику | `Button.Click` | `StartNewGame` |
+
+**Зачем альтернативы:**
+
+- **Ctrl+ЛКМ** — замена правого клика (`CycleMark`) для тачпадов, где ПКМ
+  не работает или срабатывает нестабильно. Циклит метку
+  `Closed → Flagged → Question → Closed`, счётчик мин обновляется.
+- **Двойной клик ЛКМ** (Vista+) — аккорд в два клика. Первый клик открывает
+  клетку обычным `OpenCell` (или проигрывает, если под ней мина). Второй
+  клик вызывает `Chord` на уже открытой клетке: если она стала `Number` и
+  число флагов вокруг совпадает с цифрой — открываются соседи; иначе no-op.
+  Для игрока это один жест «двойной клик», для кода — `OpenCell` + `Chord`.
+- **Средняя кнопка** — на тачпадах обычно 3-finger tap. Аккорд срабатывает
+  мгновенно, без ожидания второй кнопки.
+
+Все пути ведут в одни и те же методы ядра — поведение и события идентичны.
+
+### 6.2. Порядок обработки в `MouseUp`
+
+```
+1. Снять флаг «кнопка зажата» из _downButtons.
+2. Если _suppressNextMouseUp — погасить второй MouseUp после аккорда, выход.
+3. Если _chordCandidate задан — Chord, _suppressNextMouseUp = true, выход.
+4. Left:
+   a. ResetSmileyForCurrentState()
+   b. point = ToCellPoint(e.X, e.Y); если null — выход.
+   c. если Ctrl зажат                — CycleMark(point)   [аналог ПКМ]
+      иначе если Clicks == 2
+              и IsOpenedNumber(point)  — Chord(point)       [Vista+]
+      иначе                            — OpenCell(point)
+   d. UpdateMineCounter()
+5. Right:
+   a. point = ToCellPoint(e.X, e.Y); если null — выход.
+   b. CycleMark(point)
+   c. UpdateMineCounter()
+```
+
+`Control.ModifierKeys` читается **в момент `MouseUp`**, а не `MouseDown`:
+пользователь мог зажать Ctrl уже после нажатия кнопки мыши.
+
+### 6.3. Смайлик-кнопка
+
+- `MouseDown` (ЛКМ, состояние `NotStarted`/`InProgress`) → `smiley_oh.png`.
+- `MouseUp` → `ResetSmileyForCurrentState()`: `smiley` / `smiley_win` / `smiley_lose`
+  в зависимости от `GameState`.
+- При аккорде `MouseDown` **не** включает `smiley_oh` — иначе смайлик мигал бы
+  при каждом аккорде.
+
+### 6.4. Защита от рассинхронизации кнопок
+
+`_downButtons` может «застрять», если кнопку отпустили за пределами панели
+(`MouseUp` не пришёл). В `BoardPanel_MouseEnter`:
 
 ```csharp
-private void BoardPanel_MouseUp(object? sender, MouseEventArgs e)
-{
-    if (e.Button == MouseButtons.Left)
-    {
-        if (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted)
-            SetSmiley("smiley.png");
+if (Control.MouseButtons == MouseButtons.None)
+    _downButtons = MouseButtons.None;
+```
 
-        int x = e.X / CellSize, y = e.Y / CellSize;
-        if (x >= 0 && x < _engine.Width && y >= 0 && y < _engine.Height)
-            _engine.OpenCell(new CellPoint(x, y));
-    }
-}
+В `StartGame` — полный сброс:
+
+```csharp
+_downButtons = MouseButtons.None;
+_chordCandidate = null;
+_suppressNextMouseUp = false;
 ```
 
 ## 7. Кнопка смайлика

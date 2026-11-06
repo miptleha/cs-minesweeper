@@ -1,10 +1,15 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using MinesweeperCore.Abstractions;
 using MinesweeperCore.Domain;
 using MinesweeperCore.Records;
 
-namespace MinesweeperWinForms;
+namespace MinesweeperCore.Infrastructure;
 
+/// <summary>
+/// Реализация IRecordStore на основе JSON-файла.
+/// По умолчанию — %LocalAppData%\Minesweeper\records.json.
+/// Общая для WinForms и MonoGame: формат файла совместим.
+/// </summary>
 public class JsonRecordStore : IRecordStore
 {
     private readonly string _filePath;

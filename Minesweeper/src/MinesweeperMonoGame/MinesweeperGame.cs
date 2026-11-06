@@ -3,14 +3,14 @@ using Microsoft.Xna.Framework.Input;
 
 namespace MinesweeperMonoGame;
 
-public class Game1 : Game
+public class MinesweeperGame : Game
 {
     private GraphicsDeviceManager _graphics;
 
     /// <summary>
     /// Менеджер графики.
     /// </summary>
-    public Game1()
+    public MinesweeperGame()
     {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
