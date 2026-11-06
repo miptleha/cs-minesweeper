@@ -12,7 +12,7 @@ public class MainForm : Form
     private readonly GameEngine _engine;
     private readonly IRecordStore _recordStore;
 
-    private readonly Panel _topPanel;
+    private readonly TableLayoutPanel _topPanel;
     private readonly Panel _boardPanel;
     private readonly PictureBox _mineCounter;
     private readonly PictureBox _timerDisplay;
@@ -23,62 +23,64 @@ public class MainForm : Form
     private static readonly Dictionary<string, Image> _imageCache = new();
     private static readonly Dictionary<string, Image> _smileyCache = new();
 
-    // Коэффициент масштабирования для High-DPI (1.0 = 100%, 1.5 = 150%)
     private float ScaleFactor => DeviceDpi / 96f;
-
-    // Динамический размер клетки (на 100% DPI будет 24)
     private int GetCellSize() => (int)(24 * ScaleFactor);
 
     public MainForm()
     {
-        // 1. Создаем движок и хранилище ДО инициализации UI (чтобы не было warning-ов)
         _recordStore = new JsonRecordStore();
         _engine = new GameEngine(new SystemRandomProvider(), _recordStore);
 
         Text = "Сапёр";
 
-        // 2. Включаем DPI-масштабирование
-        AutoScaleMode = AutoScaleMode.Dpi;
-        AutoScaleDimensions = new SizeF(96F, 96F);
-
+        // Отключаем авто-масштабирование WinForms, всё делаем вручную
+        AutoScaleMode = AutoScaleMode.None;
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
 
-        // 3. Создаем панели
-        _topPanel = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = SystemColors.Control };
+        _topPanel = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            ColumnCount = 3,
+            RowCount = 1,
+            BackColor = SystemColors.Control,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
+        };
+        _topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+        _topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34f));
+        _topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
 
-        _mineCounter = new PictureBox { Size = new Size(3 * 24, 32), BackColor = Color.Black };
-        _timerDisplay = new PictureBox { Size = new Size(3 * 24, 32), BackColor = Color.Black };
+        _mineCounter = new PictureBox
+        {
+            SizeMode = PictureBoxSizeMode.CenterImage,
+            BackColor = Color.Black,
+            Anchor = AnchorStyles.Left
+        };
+
+        _timerDisplay = new PictureBox
+        {
+            SizeMode = PictureBoxSizeMode.CenterImage,
+            BackColor = Color.Black,
+            Anchor = AnchorStyles.Right
+        };
 
         _smileyButton = new Button
         {
-            Size = new Size(32, 32),
             FlatStyle = FlatStyle.Standard,
             Cursor = Cursors.Hand,
             TabStop = false,
             ImageAlign = ContentAlignment.MiddleCenter,
-            Padding = new Padding(0)
+            Padding = new Padding(0),
+            Anchor = AnchorStyles.None
         };
         _smileyButton.Click += (s, e) => StartGame(_engine.Settings);
 
-        _topPanel.Controls.Add(_mineCounter);
-        _topPanel.Controls.Add(_smileyButton);
-        _topPanel.Controls.Add(_timerDisplay);
-
-        // Центрирование элементов на верхней панели
-        _topPanel.Resize += (s, e) =>
-        {
-            _smileyButton.Left = (_topPanel.Width - _smileyButton.Width) / 2;
-            _smileyButton.Top = (_topPanel.Height - _smileyButton.Height) / 2;
-
-            _timerDisplay.Left = _topPanel.Width - _timerDisplay.Width - (int)(10 * ScaleFactor);
-            _timerDisplay.Top = (_topPanel.Height - _timerDisplay.Height) / 2;
-
-            _mineCounter.Left = (int)(10 * ScaleFactor);
-            _mineCounter.Top = (_topPanel.Height - _mineCounter.Height) / 2;
-        };
+        _topPanel.Controls.Add(_mineCounter, 0, 0);
+        _topPanel.Controls.Add(_smileyButton, 1, 0);
+        _topPanel.Controls.Add(_timerDisplay, 2, 0);
 
         _boardPanel = new BufferedPanel { Dock = DockStyle.Fill };
         _boardPanel.Paint += BoardPanel_Paint;
@@ -87,7 +89,6 @@ public class MainForm : Form
         _boardPanel.MouseEnter += BoardPanel_MouseEnter;
         _boardPanel.MouseLeave += BoardPanel_MouseLeave;
 
-        // 4. Меню
         var menu = new MenuStrip();
         var gameMenu = new ToolStripMenuItem("Игра");
         gameMenu.DropDownItems.Add("Новая игра", null, (s, e) => StartGame(_engine.Settings));
@@ -111,7 +112,6 @@ public class MainForm : Form
         Controls.Add(_topPanel);
         Controls.Add(menu);
 
-        // 5. Подписка на события движка
         _engine.CellChanged += (s, e) => { _boardPanel.Invalidate(); UpdateMineCounter(); };
         _engine.CellsRevealed += (s, e) => _boardPanel.Invalidate();
         _engine.GameStateChanged += OnGameStateChanged;
@@ -125,15 +125,32 @@ public class MainForm : Form
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
-        // Запускаем игру после загрузки формы, когда DeviceDpi точно известен
+        ApplyScale(); // Применяем масштаб шапки перед стартом
         StartGame(DifficultyPresets.Beginner);
     }
 
     protected override void OnDpiChanged(DpiChangedEventArgs e)
     {
         base.OnDpiChanged(e);
-        // При переносе окна на монитор с другим DPI пересчитываем размеры
+        ApplyScale(); // Если перетащили на другой монитор
         StartGame(_engine.Settings);
+    }
+
+    private void ApplyScale()
+    {
+        float scale = ScaleFactor;
+
+        // Масштабируем панель и элементы
+        _topPanel.Height = (int)(48 * scale);
+
+        _mineCounter.Size = new Size((int)(72 * scale), (int)(32 * scale));
+        _mineCounter.Margin = new Padding((int)(10 * scale), (int)(8 * scale), 0, 0);
+
+        _timerDisplay.Size = new Size((int)(72 * scale), (int)(32 * scale));
+        _timerDisplay.Margin = new Padding(0, (int)(8 * scale), (int)(10 * scale), 0);
+
+        _smileyButton.Size = new Size((int)(32 * scale), (int)(32 * scale));
+        _smileyButton.Margin = new Padding(0, (int)(8 * scale), 0, 0);
     }
 
     private void StartGame(GameSettings settings)
@@ -159,7 +176,6 @@ public class MainForm : Form
         if (e.NewState == GameState.Won)
         {
             SetSmiley("smiley_win.png");
-
             if (_engine.Difficulty != DifficultyLevel.Custom)
             {
                 using var prompt = new NamePromptForm();
@@ -167,9 +183,7 @@ public class MainForm : Form
                 {
                     _engine.PlayerName = prompt.PlayerName;
                     if (_recordStore is JsonRecordStore jsonStore)
-                    {
                         jsonStore.RenameRecord(_engine.Difficulty, _engine.Elapsed.TotalSeconds, prompt.PlayerName);
-                    }
                 }
                 new RecordsForm(_recordStore).ShowDialog(this);
             }
@@ -192,6 +206,7 @@ public class MainForm : Form
         if (_smileyCache.TryGetValue(name, out var cached)) return cached;
         var original = LoadImage(name);
 
+        // Масштабируем картинку смайлика
         int size = (int)(28 * ScaleFactor);
         var bmp = new Bitmap(size, size);
         using var g = Graphics.FromImage(bmp);
@@ -206,7 +221,9 @@ public class MainForm : Form
     {
         if (e.Button == MouseButtons.Left)
         {
-            SetSmiley("smiley_oh.png");
+            // Меняем смайлик на "удивленный" ТОЛЬКО если игра еще идет
+            if (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted)
+                SetSmiley("smiley_oh.png");
         }
         else if (e.Button == MouseButtons.Right)
         {
@@ -224,8 +241,13 @@ public class MainForm : Form
     {
         if (e.Button == MouseButtons.Left)
         {
+            // Возвращаем смайлик в зависимости от текущего состояния игры
             if (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted)
                 SetSmiley("smiley.png");
+            else if (_engine.State == GameState.Lost)
+                SetSmiley("smiley_lose.png");
+            else if (_engine.State == GameState.Won)
+                SetSmiley("smiley_win.png");
 
             int cellSize = GetCellSize();
             int x = e.X / cellSize, y = e.Y / cellSize;
@@ -299,16 +321,17 @@ public class MainForm : Form
         int remaining = _engine.RemainingMines;
         if (_mineCounter.Image is Bitmap oldBmp) oldBmp.Dispose();
 
+        int w = _mineCounter.Width / 3;
+        int h = _mineCounter.Height;
+
         if (remaining >= 0)
         {
-            _mineCounter.Image = RenderLedCounter(remaining, 3);
+            _mineCounter.Image = RenderLedCounter(remaining, 3, w, h);
         }
         else
         {
             int abs = Math.Abs(remaining);
-            int w = (int)(24 * ScaleFactor);
-            int h = (int)(32 * ScaleFactor);
-            var bmp = new Bitmap(3 * w, h);
+            var bmp = new Bitmap(_mineCounter.Width, _mineCounter.Height);
             using var g = Graphics.FromImage(bmp);
 
             g.InterpolationMode = InterpolationMode.NearestNeighbor;
@@ -327,14 +350,16 @@ public class MainForm : Form
     {
         var seconds = Math.Min((int)_engine.Elapsed.TotalSeconds, 999);
         if (_timerDisplay.Image is Bitmap oldBmp) oldBmp.Dispose();
-        _timerDisplay.Image = RenderLedCounter(seconds, 3);
+
+        int w = _timerDisplay.Width / 3;
+        int h = _timerDisplay.Height;
+
+        _timerDisplay.Image = RenderLedCounter(seconds, 3, w, h);
     }
 
-    private Image RenderLedCounter(int value, int digits)
+    private Image RenderLedCounter(int value, int digits, int digitW, int digitH)
     {
-        int w = (int)(24 * ScaleFactor);
-        int h = (int)(32 * ScaleFactor);
-        var bmp = new Bitmap(digits * w, h);
+        var bmp = new Bitmap(digits * digitW, digitH);
         using var g = Graphics.FromImage(bmp);
 
         g.InterpolationMode = InterpolationMode.NearestNeighbor;
@@ -342,7 +367,7 @@ public class MainForm : Form
 
         var s = value.ToString().PadLeft(digits, '0');
         for (int i = 0; i < digits; i++)
-            g.DrawImage(LoadImage($"timer_{s[i]}.png"), new Rectangle(i * w, 0, w, h));
+            g.DrawImage(LoadImage($"timer_{s[i]}.png"), new Rectangle(i * digitW, 0, digitW, digitH));
 
         return bmp;
     }

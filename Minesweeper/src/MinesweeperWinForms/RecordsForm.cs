@@ -9,26 +9,27 @@ public class RecordsForm : Form
     {
         Text = "Лучшие результаты";
 
-        // Включаем автоматическое DPI-масштабирование
-        AutoScaleMode = AutoScaleMode.Dpi;
-        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode = AutoScaleMode.None;
+        float scale = DeviceDpi / 96f;
 
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new Size(300, 250);
+        ClientSize = new Size((int)(360 * scale), (int)(260 * scale));
         ShowInTaskbar = false;
 
         var tabControl = new TabControl { Dock = DockStyle.Fill };
-        tabControl.TabPages.Add(CreateTab("Новичок", DifficultyLevel.Beginner, recordStore));
-        tabControl.TabPages.Add(CreateTab("Любитель", DifficultyLevel.Intermediate, recordStore));
-        tabControl.TabPages.Add(CreateTab("Профессионал", DifficultyLevel.Expert, recordStore));
+        tabControl.TabPages.Add(CreateTab("Новичок", DifficultyLevel.Beginner, recordStore, scale));
+        tabControl.TabPages.Add(CreateTab("Любитель", DifficultyLevel.Intermediate, recordStore, scale));
+        tabControl.TabPages.Add(CreateTab("Профессионал", DifficultyLevel.Expert, recordStore, scale));
 
         Controls.Add(tabControl);
+
+        // Убрали умножение базового шрифта на scale
+        Font = new Font("Segoe UI", 9F);
     }
 
-    // Закрытие по Esc
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
         if (keyData == Keys.Escape)
@@ -39,7 +40,7 @@ public class RecordsForm : Form
         return base.ProcessCmdKey(ref msg, keyData);
     }
 
-    private TabPage CreateTab(string title, DifficultyLevel level, IRecordStore store)
+    private TabPage CreateTab(string title, DifficultyLevel level, IRecordStore store, float scale)
     {
         var page = new TabPage(title);
         var listView = new ListView
@@ -51,10 +52,9 @@ public class RecordsForm : Form
             HeaderStyle = ColumnHeaderStyle.Nonclickable
         };
 
-        // Ширины колонок тоже будут автоматически отмасштабированы, так как они заданы в логических пикселях
-        listView.Columns.Add("Место", 50);
-        listView.Columns.Add("Имя", 130);
-        listView.Columns.Add("Время", 80);
+        listView.Columns.Add("Место", (int)(60 * scale));
+        listView.Columns.Add("Имя", (int)(160 * scale));
+        listView.Columns.Add("Время", (int)(90 * scale));
 
         var records = store.LoadRecords(level).ToList();
         for (int i = 0; i < records.Count; i++)

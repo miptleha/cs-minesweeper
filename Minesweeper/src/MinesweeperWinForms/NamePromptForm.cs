@@ -8,20 +8,19 @@ public class NamePromptForm : Form
     {
         Text = "Новый рекорд!";
 
-        // Включаем автоматическое DPI-масштабирование
-        AutoScaleMode = AutoScaleMode.Dpi;
-        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode = AutoScaleMode.None;
+        float scale = DeviceDpi / 96f;
 
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new Size(250, 120);
+        ClientSize = new Size((int)(280 * scale), (int)(140 * scale));
         ShowInTaskbar = false;
 
-        var label = new Label { Text = "Введите ваше имя:", Location = new Point(10, 10), AutoSize = true };
-        var textBox = new TextBox { Location = new Point(10, 30), Width = 210, Text = "Игрок" };
-        var btnOk = new Button { Text = "OK", Location = new Point(140, 70), Size = new Size(80, 30), DialogResult = DialogResult.OK };
+        var label = new Label { Text = "Введите ваше имя:", Location = new Point((int)(20 * scale), (int)(20 * scale)), AutoSize = true };
+        var textBox = new TextBox { Location = new Point((int)(20 * scale), (int)(45 * scale)), Width = (int)(240 * scale), Text = "Игрок" };
+        var btnOk = new Button { Text = "OK", Location = new Point((int)(180 * scale), (int)(90 * scale)), Size = new Size((int)(80 * scale), (int)(30 * scale)), DialogResult = DialogResult.OK };
 
         btnOk.Click += (s, e) =>
         {
@@ -31,5 +30,8 @@ public class NamePromptForm : Form
 
         Controls.AddRange(new Control[] { label, textBox, btnOk });
         AcceptButton = btnOk;
+
+        // Убрали умножение базового шрифта на scale
+        Font = new Font("Segoe UI", 9F);
     }
 }
