@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -59,6 +60,22 @@ public class MinesweeperGame : Game
     private int _lastMines;
     private int _lastSeconds;
 
+    // --- DPI Масштабирование ---
+    private float _scaleFactor = 1.0f;
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForSystem();
+
+    private int CellSize => (int)(24 * _scaleFactor);
+    private int TopPanelHeight => (int)(48 * _scaleFactor);
+    private int MenuHeight => (int)(24 * _scaleFactor);
+    private int SmileySize => (int)(32 * _scaleFactor);
+    private int LedW => (int)(24 * _scaleFactor);
+    private int LedH => (int)(32 * _scaleFactor);
+    private int PanelTopMargin => (int)(8 * _scaleFactor);
+    private int DoubleClickMs => 500;
+    private float FontScale => 0.75f * _scaleFactor;
+
     // --- Данные меню (T5) ---
     private readonly string[] _gameMenuItems = {
         "Новая игра",
@@ -84,22 +101,15 @@ public class MinesweeperGame : Game
     private SpriteBatch _spriteBatch = null!;
     private Texture2D _solidColor = null!;
 
-    private const int CellSize = 24;
-    private const int TopPanelHeight = 48;
-    private const int MenuHeight = 24;
-    private const int SmileySize = 32;
-    private const int LedW = 24;
-    private const int LedH = 32;
-    private const int PanelTopMargin = 8;
-    private const int DoubleClickMs = 500;
-
-    private int _menuGameX = 8;
+    private int _menuGameX;
     private int _menuGameW;
     private int _menuHelpX;
     private int _menuHelpW;
 
     public MinesweeperGame()
     {
+        UpdateDpiScale();
+
         _recordStore = new JsonRecordStore();
         _engine = new GameEngine(new SystemRandomProvider(), _recordStore);
 
@@ -112,6 +122,22 @@ public class MinesweeperGame : Game
         Window.AllowUserResizing = false;
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
+    }
+
+    private void UpdateDpiScale()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            try
+            {
+                uint dpi = GetDpiForSystem();
+                _scaleFactor = dpi / 96f;
+            }
+            catch
+            {
+                _scaleFactor = 1.0f;
+            }
+        }
     }
 
     protected override void Initialize()
@@ -169,10 +195,10 @@ public class MinesweeperGame : Game
 
         _font = Content.Load<SpriteFont>("DefaultFont");
 
-        _menuGameX = 8;
-        _menuGameW = (int)(_font.MeasureString("Игра").X * 0.75f) + 16;
-        _menuHelpX = _menuGameX + _menuGameW + 4;
-        _menuHelpW = (int)(_font.MeasureString("Справка").X * 0.75f) + 16;
+        _menuGameX = (int)(8 * _scaleFactor);
+        _menuGameW = (int)(_font.MeasureString("Игра").X * FontScale) + (int)(16 * _scaleFactor);
+        _menuHelpX = _menuGameX + _menuGameW + (int)(4 * _scaleFactor);
+        _menuHelpW = (int)(_font.MeasureString("Справка").X * FontScale) + (int)(16 * _scaleFactor);
 
         _solidColor = new Texture2D(GraphicsDevice, 1, 1);
         _solidColor.SetData(new[] { Color.White });
@@ -251,7 +277,8 @@ public class MinesweeperGame : Game
             _chordCell = ToCellPoint(pos);
 
         bool leftJustDown = m.LeftButton == ButtonState.Pressed && _prevMouse.LeftButton == ButtonState.Released;
-        if (leftJustDown && _chordCell is null && !SmileyRect.Contains(pos)
+        // ИСПРАВЛЕНИЕ: проверяем, что клик именно по полю, как в WinForms
+        if (leftJustDown && _chordCell is null && BoardRect.Contains(pos)
             && (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted)
             && _screen == Screen.Main && _openMenu == MenuKind.None)
         {
@@ -284,10 +311,6 @@ public class MinesweeperGame : Game
 
         if (EscJustPressed())
         {
-            // Esc: сначала закрывает выпадающее меню (если открыто), затем возвращает
-            // с экрана. Исключение — NamePrompt: Esc = отмена (без сохранения имени),
-            // после чего открывается Records — как в WinForms-версии (§9.4).
-            // На главном экране без меню Esc ничего не делает (игру НЕ закрывает).
             if (_openMenu != MenuKind.None)
                 _openMenu = MenuKind.None;
             else if (_screen == Screen.NamePrompt)
@@ -335,16 +358,16 @@ public class MinesweeperGame : Game
             int x = _openMenu == MenuKind.Game ? _menuGameX : _menuHelpX;
             int y = MenuHeight;
             int width = 0;
-            foreach (var item in items) width = Math.Max(width, (int)(_font.MeasureString(item).X * 0.75f));
-            width += 24;
+            foreach (var item in items) width = Math.Max(width, (int)(_font.MeasureString(item).X * FontScale));
+            width += (int)(24 * _scaleFactor);
 
             if (x + width > GraphicsDevice.Viewport.Width) x = GraphicsDevice.Viewport.Width - width;
             if (x < 0) x = 0;
 
             for (int i = 0; i < items.Length; i++)
             {
-                int itemY = y + 2 + i * 24;
-                if (pos.Y >= itemY && pos.Y < itemY + 24 && pos.X >= x && pos.X < x + width)
+                int itemY = y + (int)(2 * _scaleFactor) + i * (int)(24 * _scaleFactor);
+                if (pos.Y >= itemY && pos.Y < itemY + (int)(24 * _scaleFactor) && pos.X >= x && pos.X < x + width)
                 {
                     _menuHover = 2 + i;
                     return;
@@ -453,16 +476,16 @@ public class MinesweeperGame : Game
         int x = _openMenu == MenuKind.Game ? _menuGameX : _menuHelpX;
         int y = MenuHeight;
         int width = 0;
-        foreach (var item in items) width = Math.Max(width, (int)(_font.MeasureString(item).X * 0.75f));
-        width += 24;
+        foreach (var item in items) width = Math.Max(width, (int)(_font.MeasureString(item).X * FontScale));
+        width += (int)(24 * _scaleFactor);
 
         if (x + width > GraphicsDevice.Viewport.Width) x = GraphicsDevice.Viewport.Width - width;
         if (x < 0) x = 0;
 
         for (int i = 0; i < items.Length; i++)
         {
-            int itemY = y + 2 + i * 24;
-            if (pos.Y >= itemY && pos.Y < itemY + 24 && pos.X >= x && pos.X < x + width)
+            int itemY = y + (int)(2 * _scaleFactor) + i * (int)(24 * _scaleFactor);
+            if (pos.Y >= itemY && pos.Y < itemY + (int)(24 * _scaleFactor) && pos.X >= x && pos.X < x + width)
             {
                 if (items[i] != "-") ExecuteMenuItem(i, _openMenu);
                 _openMenu = MenuKind.None;
@@ -613,20 +636,18 @@ public class MinesweeperGame : Game
         try
         {
             GraphicsDevice.Clear(new Color(240, 240, 240));
+
+            // Используем LinearClamp для всего экрана, как в самой первой версии.
+            // Это вернет четкие границы клеток и уберет искажения флажков.
             _spriteBatch.Begin(samplerState: SamplerState.LinearClamp);
 
-            try
-            {
-                DrawMenuBar();
-                DrawTopPanel();
-                DrawBoard();
-                if (_openMenu != MenuKind.None && _screen == Screen.Main) DrawDropdown();
-                DrawActiveScreen(gameTime);
-            }
-            finally
-            {
-                _spriteBatch.End();
-            }
+            DrawMenuBar();
+            DrawTopPanel();
+            DrawBoard();
+            if (_openMenu != MenuKind.None && _screen == Screen.Main) DrawDropdown();
+            DrawActiveScreen(gameTime);
+
+            _spriteBatch.End();
         }
         catch (Exception ex)
         {
@@ -661,15 +682,15 @@ public class MinesweeperGame : Game
 
     private void DrawMenuHeader(string text, int menuIndex, int x, int w)
     {
-        int y = 4;
+        int y = (int)(4 * _scaleFactor);
         bool isOpen = (menuIndex == 0 && _openMenu == MenuKind.Game) || (menuIndex == 1 && _openMenu == MenuKind.Help);
         bool isHover = _menuHover == menuIndex;
 
         if (isOpen || isHover)
-            DrawRect(new Color(0, 120, 215), new Rectangle(x, y, w, MenuHeight - 4));
+            DrawRect(new Color(0, 120, 215), new Rectangle(x, y, w, MenuHeight - (int)(4 * _scaleFactor)));
 
         Color textColor = (isOpen || isHover) ? Color.White : Color.Black;
-        _spriteBatch.DrawString(_font, text, new Vector2(x + 8, y + 1), textColor, 0f, Vector2.Zero, 0.75f, SpriteEffects.None, 0f);
+        _spriteBatch.DrawString(_font, text, new Vector2(x + (int)(8 * _scaleFactor), y + (int)(1 * _scaleFactor)), textColor, 0f, Vector2.Zero, FontScale, SpriteEffects.None, 0f);
     }
 
     private void DrawDropdown()
@@ -679,9 +700,9 @@ public class MinesweeperGame : Game
         int y = MenuHeight;
 
         int width = 0;
-        foreach (var item in items) width = Math.Max(width, (int)(_font.MeasureString(item).X * 0.75f));
-        width += 24;
-        int height = items.Length * 24 + 4;
+        foreach (var item in items) width = Math.Max(width, (int)(_font.MeasureString(item).X * FontScale));
+        width += (int)(24 * _scaleFactor);
+        int height = items.Length * (int)(24 * _scaleFactor) + (int)(4 * _scaleFactor);
 
         if (x + width > GraphicsDevice.Viewport.Width) x = GraphicsDevice.Viewport.Width - width;
         if (x < 0) x = 0;
@@ -695,49 +716,51 @@ public class MinesweeperGame : Game
 
         for (int i = 0; i < items.Length; i++)
         {
-            int itemY = y + 2 + i * 24;
+            int itemY = y + (int)(2 * _scaleFactor) + i * (int)(24 * _scaleFactor);
             if (items[i] == "-")
             {
-                DrawRect(new Color(200, 200, 200), new Rectangle(x + 4, itemY + 11, width - 8, 1));
+                DrawRect(new Color(200, 200, 200), new Rectangle(x + (int)(4 * _scaleFactor), itemY + (int)(11 * _scaleFactor), width - (int)(8 * _scaleFactor), 1));
             }
             else
             {
                 bool isHover = _menuHover == 2 + i;
                 if (isHover)
-                    DrawRect(new Color(0, 120, 215), new Rectangle(x + 1, itemY, width - 2, 24));
+                    DrawRect(new Color(0, 120, 215), new Rectangle(x + 1, itemY, width - 2, (int)(24 * _scaleFactor)));
 
                 Color textColor = isHover ? Color.White : Color.Black;
-                _spriteBatch.DrawString(_font, items[i], new Vector2(x + 12, itemY + 3), textColor, 0f, Vector2.Zero, 0.75f, SpriteEffects.None, 0f);
+                _spriteBatch.DrawString(_font, items[i], new Vector2(x + (int)(12 * _scaleFactor), itemY + (int)(3 * _scaleFactor)), textColor, 0f, Vector2.Zero, FontScale, SpriteEffects.None, 0f);
             }
         }
     }
 
     private void DrawTopPanel()
     {
-        int mineCounterX = 10;
+        int mineCounterX = (int)(10 * _scaleFactor);
         int mineCounterY = MenuHeight + PanelTopMargin;
-        int timerX = GraphicsDevice.Viewport.Width - 10 - 72;
+        int timerX = GraphicsDevice.Viewport.Width - (int)(10 * _scaleFactor) - 3 * LedW;
         int timerY = MenuHeight + PanelTopMargin;
 
-        DrawRect(Color.Black, new Rectangle(mineCounterX - 2, mineCounterY - 2, 76, 36));
-        DrawRect(Color.Black, new Rectangle(timerX - 2, timerY - 2, 76, 36));
+        // 1. Сначала рисуем черные фоны
+        DrawRect(Color.Black, new Rectangle(mineCounterX - (int)(2 * _scaleFactor), mineCounterY - (int)(2 * _scaleFactor), 3 * LedW + (int)(4 * _scaleFactor), LedH + (int)(4 * _scaleFactor)));
+        DrawRect(Color.Black, new Rectangle(timerX - (int)(2 * _scaleFactor), timerY - (int)(2 * _scaleFactor), 3 * LedW + (int)(4 * _scaleFactor), LedH + (int)(4 * _scaleFactor)));
 
-        DrawLed(_lastMines, mineCounterX, mineCounterY, true);
-
+        // Фон и рамка смайлика
         int smileX = (GraphicsDevice.Viewport.Width - SmileySize) / 2;
         int smileY = MenuHeight + PanelTopMargin;
-
         bool isHover = SmileyRect.Contains(Mouse.GetState().Position) && _screen == Screen.Main && _openMenu == MenuKind.None;
         Color smileBg = isHover ? new Color(229, 241, 251) : new Color(240, 240, 240);
         Color smileBorder = isHover ? new Color(0, 120, 215) : new Color(160, 160, 160);
 
-        DrawRect(smileBorder, new Rectangle(smileX - 1, smileY - 1, SmileySize + 2, SmileySize + 2));
+        DrawRect(smileBorder, new Rectangle(smileX - (int)(1 * _scaleFactor), smileY - (int)(1 * _scaleFactor), SmileySize + (int)(2 * _scaleFactor), SmileySize + (int)(2 * _scaleFactor)));
         DrawRect(smileBg, new Rectangle(smileX, smileY, SmileySize, SmileySize));
 
-        int smileDrawX = smileX + (SmileySize - 28) / 2;
-        int smileDrawY = smileY + (SmileySize - 28) / 2;
+        // 2. Потом спрайты (LED, смайлик)
+        DrawLed(_lastMines, mineCounterX, mineCounterY, true);
+
+        int smileDrawX = smileX + (SmileySize - (int)(28 * _scaleFactor)) / 2;
+        int smileDrawY = smileY + (SmileySize - (int)(28 * _scaleFactor)) / 2;
         if (_tex.TryGetValue(_smiley, out Texture2D smileTex))
-            _spriteBatch.Draw(smileTex, new Rectangle(smileDrawX, smileDrawY, 28, 28), Color.White);
+            _spriteBatch.Draw(smileTex, new Rectangle(smileDrawX, smileDrawY, (int)(28 * _scaleFactor), (int)(28 * _scaleFactor)), Color.White);
 
         DrawLed(_lastSeconds, timerX, timerY, false);
     }
@@ -823,7 +846,8 @@ public class MinesweeperGame : Game
 
     private void DrawWindow(Rectangle rect)
     {
-        DrawRect(new Color(0, 0, 0, 50), new Rectangle(rect.X + 5, rect.Y + 5, rect.Width, rect.Height));
+        int shadowOffset = (int)(5 * _scaleFactor);
+        DrawRect(new Color(0, 0, 0, 50), new Rectangle(rect.X + shadowOffset, rect.Y + shadowOffset, rect.Width, rect.Height));
         DrawRect(Color.White, rect);
         DrawRect(new Color(160, 160, 160), new Rectangle(rect.X, rect.Y, rect.Width, 1));
         DrawRect(new Color(160, 160, 160), new Rectangle(rect.X, rect.Y, 1, rect.Height));
@@ -834,32 +858,32 @@ public class MinesweeperGame : Game
     private void DrawRecordsScreen()
     {
         int centerX = GraphicsDevice.Viewport.Width / 2;
-        int w = Math.Min(300, GraphicsDevice.Viewport.Width - 20);
-        int h = Math.Min(240, GraphicsDevice.Viewport.Height - 20);
-        Rectangle window = new Rectangle(centerX - w / 2, 40, w, h);
+        int w = Math.Min((int)(300 * _scaleFactor), GraphicsDevice.Viewport.Width - (int)(20 * _scaleFactor));
+        int h = Math.Min((int)(240 * _scaleFactor), GraphicsDevice.Viewport.Height - (int)(20 * _scaleFactor));
+        Rectangle window = new Rectangle(centerX - w / 2, (int)(40 * _scaleFactor), w, h);
         DrawWindow(window);
 
-        _spriteBatch.DrawString(_font, "Лучшие результаты", new Vector2(window.X + 20, window.Y + 15), Color.Black, 0f, Vector2.Zero, 0.75f, SpriteEffects.None, 0f);
+        _spriteBatch.DrawString(_font, "Лучшие результаты", new Vector2(window.X + (int)(20 * _scaleFactor), window.Y + (int)(15 * _scaleFactor)), Color.Black, 0f, Vector2.Zero, FontScale, SpriteEffects.None, 0f);
 
         string[] levelNames = { "Новичок", "Любитель", "Профессионал" };
         string levelText = levelNames[_recordsTab];
-        Vector2 levelSize = _font.MeasureString(levelText) * 0.75f;
+        Vector2 levelSize = _font.MeasureString(levelText) * FontScale;
 
-        int selectorY = window.Y + 40;
-        _prevLevelRect = new Rectangle(centerX - (int)levelSize.X / 2 - 30, selectorY, 24, 24);
-        _nextLevelRect = new Rectangle(centerX + (int)levelSize.X / 2 + 6, selectorY, 24, 24);
+        int selectorY = window.Y + (int)(40 * _scaleFactor);
+        _prevLevelRect = new Rectangle(centerX - (int)levelSize.X / 2 - (int)(30 * _scaleFactor), selectorY, (int)(24 * _scaleFactor), (int)(24 * _scaleFactor));
+        _nextLevelRect = new Rectangle(centerX + (int)levelSize.X / 2 + (int)(6 * _scaleFactor), selectorY, (int)(24 * _scaleFactor), (int)(24 * _scaleFactor));
 
         DrawRect(new Color(220, 220, 220), _prevLevelRect);
-        _spriteBatch.DrawString(_font, "<", new Vector2(_prevLevelRect.X + 7, _prevLevelRect.Y + 2), Color.Black, 0, Vector2.Zero, 0.75f, SpriteEffects.None, 0);
+        _spriteBatch.DrawString(_font, "<", new Vector2(_prevLevelRect.X + (int)(7 * _scaleFactor), _prevLevelRect.Y + (int)(2 * _scaleFactor)), Color.Black, 0, Vector2.Zero, FontScale, SpriteEffects.None, 0);
 
-        _spriteBatch.DrawString(_font, levelText, new Vector2(centerX - (int)levelSize.X / 2, selectorY + 3), Color.DarkBlue, 0, Vector2.Zero, 0.75f, SpriteEffects.None, 0);
+        _spriteBatch.DrawString(_font, levelText, new Vector2(centerX - (int)levelSize.X / 2, selectorY + (int)(3 * _scaleFactor)), Color.DarkBlue, 0, Vector2.Zero, FontScale, SpriteEffects.None, 0);
 
         DrawRect(new Color(220, 220, 220), _nextLevelRect);
-        _spriteBatch.DrawString(_font, ">", new Vector2(_nextLevelRect.X + 7, _nextLevelRect.Y + 2), Color.Black, 0, Vector2.Zero, 0.75f, SpriteEffects.None, 0);
+        _spriteBatch.DrawString(_font, ">", new Vector2(_nextLevelRect.X + (int)(7 * _scaleFactor), _nextLevelRect.Y + (int)(2 * _scaleFactor)), Color.Black, 0, Vector2.Zero, FontScale, SpriteEffects.None, 0);
 
         DifficultyLevel activeLevel = (DifficultyLevel)_recordsTab;
         var records = _recordStore.LoadRecords(activeLevel).ToList();
-        float maxTextWidth = window.Width - 60; // Ограничение по ширине для строки
+        float maxTextWidth = window.Width - (int)(60 * _scaleFactor);
 
         for (int i = 0; i < 5; i++)
         {
@@ -875,10 +899,9 @@ public class MinesweeperGame : Game
 
             string finalName = name;
 
-            // Обрезаем имя, если оно слишком длинное, чтобы время всегда влезало
             if (i < records.Count)
             {
-                while (_font.MeasureString(prefix + finalName + "..." + timeSuffix).X * 0.75f > maxTextWidth && finalName.Length > 0)
+                while (_font.MeasureString(prefix + finalName + "..." + timeSuffix).X * FontScale > maxTextWidth && finalName.Length > 0)
                 {
                     finalName = finalName.Substring(0, finalName.Length - 1);
                 }
@@ -887,74 +910,78 @@ public class MinesweeperGame : Game
 
             string fullText = prefix + finalName + timeSuffix;
 
-            _spriteBatch.DrawString(_font, fullText, new Vector2(window.X + 40, window.Y + 80 + i * 24), Color.Black, 0, Vector2.Zero, 0.75f, SpriteEffects.None, 0);
+            _spriteBatch.DrawString(_font, fullText, new Vector2(window.X + (int)(40 * _scaleFactor), window.Y + (int)(80 * _scaleFactor) + i * (int)(24 * _scaleFactor)), Color.Black, 0, Vector2.Zero, FontScale, SpriteEffects.None, 0);
         }
 
-        DrawDialogButton(window.X + window.Width / 2 - 40, window.Y + window.Height - 40, "OK");
+        DrawDialogButton(window.X + window.Width / 2 - (int)(40 * _scaleFactor), window.Y + window.Height - (int)(40 * _scaleFactor), "OK");
     }
 
     private void DrawAboutScreen()
     {
         int centerX = GraphicsDevice.Viewport.Width / 2;
-        int w = Math.Min(320, GraphicsDevice.Viewport.Width - 20);
-        int h = Math.Min(200, GraphicsDevice.Viewport.Height - 20);
-        Rectangle window = new Rectangle(centerX - w / 2, 50, w, h);
+        int w = Math.Min((int)(320 * _scaleFactor), GraphicsDevice.Viewport.Width - (int)(20 * _scaleFactor));
+        int h = Math.Min((int)(200 * _scaleFactor), GraphicsDevice.Viewport.Height - (int)(20 * _scaleFactor));
+        Rectangle window = new Rectangle(centerX - w / 2, (int)(50 * _scaleFactor), w, h);
         DrawWindow(window);
 
         if (_tex.TryGetValue("smiley_win", out Texture2D icon))
-            _spriteBatch.Draw(icon, new Rectangle(window.X + 20, window.Y + 20, 32, 32), Color.White);
+            _spriteBatch.Draw(icon, new Rectangle(window.X + (int)(20 * _scaleFactor), window.Y + (int)(20 * _scaleFactor), (int)(32 * _scaleFactor), (int)(32 * _scaleFactor)), Color.White);
 
-        _spriteBatch.DrawString(_font, "Сапёр", new Vector2(window.X + 60, window.Y + 20), Color.Black, 0f, Vector2.Zero, 0.9f, SpriteEffects.None, 0f);
+        _spriteBatch.DrawString(_font, "Сапёр", new Vector2(window.X + (int)(60 * _scaleFactor), window.Y + (int)(20 * _scaleFactor)), Color.Black, 0f, Vector2.Zero, FontScale * 1.2f, SpriteEffects.None, 0f);
 
-        _spriteBatch.DrawString(_font, "Классическая игра", new Vector2(window.X + 20, window.Y + 65), Color.Black, 0f, Vector2.Zero, 0.75f, SpriteEffects.None, 0f);
-        _spriteBatch.DrawString(_font, "Автор: miptleha.", new Vector2(window.X + 20, window.Y + 85), Color.Black, 0f, Vector2.Zero, 0.75f, SpriteEffects.None, 0f);
+        _spriteBatch.DrawString(_font, "Классическая игра", new Vector2(window.X + (int)(20 * _scaleFactor), window.Y + (int)(65 * _scaleFactor)), Color.Black, 0f, Vector2.Zero, FontScale, SpriteEffects.None, 0f);
+        _spriteBatch.DrawString(_font, "Автор: miptleha.", new Vector2(window.X + (int)(20 * _scaleFactor), window.Y + (int)(85 * _scaleFactor)), Color.Black, 0f, Vector2.Zero, FontScale, SpriteEffects.None, 0f);
 
         string linkText = "Скачать с GitHub";
-        Vector2 linkSize = _font.MeasureString(linkText) * 0.75f;
-        _githubLinkRect = new Rectangle(window.X + 20, window.Y + 115, (int)linkSize.X, (int)linkSize.Y);
-        _spriteBatch.DrawString(_font, linkText, new Vector2(_githubLinkRect.X, _githubLinkRect.Y), Color.Blue, 0, Vector2.Zero, 0.75f, SpriteEffects.None, 0);
+        Vector2 linkSize = _font.MeasureString(linkText) * FontScale;
+        _githubLinkRect = new Rectangle(window.X + (int)(20 * _scaleFactor), window.Y + (int)(115 * _scaleFactor), (int)linkSize.X, (int)linkSize.Y);
+        _spriteBatch.DrawString(_font, linkText, new Vector2(_githubLinkRect.X, _githubLinkRect.Y), Color.Blue, 0, Vector2.Zero, FontScale, SpriteEffects.None, 0);
         DrawRect(Color.Blue, new Rectangle(_githubLinkRect.X, _githubLinkRect.Bottom - 1, _githubLinkRect.Width, 1));
 
-        DrawDialogButton(window.X + window.Width / 2 - 40, window.Y + window.Height - 40, "OK");
+        DrawDialogButton(window.X + window.Width / 2 - (int)(40 * _scaleFactor), window.Y + window.Height - (int)(40 * _scaleFactor), "OK");
     }
 
     private void DrawNamePromptScreen(GameTime gameTime)
     {
         int centerX = GraphicsDevice.Viewport.Width / 2;
         int centerY = GraphicsDevice.Viewport.Height / 2;
-        int w = Math.Min(300, GraphicsDevice.Viewport.Width - 20);
-        int h = Math.Min(140, GraphicsDevice.Viewport.Height - 20);
+        int w = Math.Min((int)(300 * _scaleFactor), GraphicsDevice.Viewport.Width - (int)(20 * _scaleFactor));
+        int h = Math.Min((int)(140 * _scaleFactor), GraphicsDevice.Viewport.Height - (int)(20 * _scaleFactor));
         Rectangle window = new Rectangle(centerX - w / 2, centerY - h / 2, w, h);
         DrawWindow(window);
 
-        _spriteBatch.DrawString(_font, "Введите ваше имя:", new Vector2(window.X + 20, window.Y + 20), Color.Black, 0f, Vector2.Zero, 0.75f, SpriteEffects.None, 0f);
+        _spriteBatch.DrawString(_font, "Введите ваше имя:", new Vector2(window.X + (int)(20 * _scaleFactor), window.Y + (int)(20 * _scaleFactor)), Color.Black, 0f, Vector2.Zero, FontScale, SpriteEffects.None, 0f);
 
-        DrawRect(Color.White, new Rectangle(window.X + 20, window.Y + 50, window.Width - 40, 24));
-        DrawRect(new Color(160, 160, 160), new Rectangle(window.X + 20, window.Y + 50, window.Width - 40, 1));
-        DrawRect(new Color(160, 160, 160), new Rectangle(window.X + 20, window.Y + 50, 1, 24));
-        DrawRect(new Color(160, 160, 160), new Rectangle(window.X + 20, window.Y + 73, window.Width - 40, 1));
-        DrawRect(new Color(160, 160, 160), new Rectangle(window.X + window.Width - 21, window.Y + 50, 1, 24));
+        int tbX = window.X + (int)(20 * _scaleFactor);
+        int tbY = window.Y + (int)(50 * _scaleFactor);
+        int tbW = window.Width - (int)(40 * _scaleFactor);
+        int tbH = (int)(24 * _scaleFactor);
 
-        Vector2 textSize = _font.MeasureString(_nameBuffer) * 0.75f;
-        int textX = window.X + 24;
-        int textY = window.Y + 53;
+        DrawRect(Color.White, new Rectangle(tbX, tbY, tbW, tbH));
+        DrawRect(new Color(160, 160, 160), new Rectangle(tbX, tbY, tbW, 1));
+        DrawRect(new Color(160, 160, 160), new Rectangle(tbX, tbY, 1, tbH));
+        DrawRect(new Color(160, 160, 160), new Rectangle(tbX, tbY + tbH - 1, tbW, 1));
+        DrawRect(new Color(160, 160, 160), new Rectangle(tbX + tbW - 1, tbY, 1, tbH));
 
-        _spriteBatch.DrawString(_font, _nameBuffer, new Vector2(textX, textY), Color.Black, 0f, Vector2.Zero, 0.75f, SpriteEffects.None, 0f);
+        Vector2 textSize = _font.MeasureString(_nameBuffer) * FontScale;
+        int textX = tbX + (int)(4 * _scaleFactor);
+        int textY = tbY + (int)(3 * _scaleFactor);
 
-        // Мигающая каретка (мигает каждые 500 мс)
+        _spriteBatch.DrawString(_font, _nameBuffer, new Vector2(textX, textY), Color.Black, 0f, Vector2.Zero, FontScale, SpriteEffects.None, 0f);
+
         if ((int)(gameTime.TotalGameTime.TotalMilliseconds / 500) % 2 == 0)
         {
-            DrawRect(Color.Black, new Rectangle(textX + (int)textSize.X + 1, textY + 2, 1, 14));
+            DrawRect(Color.Black, new Rectangle(textX + (int)textSize.X + 1, textY + (int)(2 * _scaleFactor), (int)(1 * _scaleFactor), (int)(14 * _scaleFactor)));
         }
 
-        DrawDialogButton(window.X + window.Width / 2 - 40, window.Y + window.Height - 40, "OK");
+        DrawDialogButton(window.X + window.Width / 2 - (int)(40 * _scaleFactor), window.Y + window.Height - (int)(40 * _scaleFactor), "OK");
     }
 
     private void DrawDialogButton(int x, int y, string text)
     {
-        int textWidth = (int)(_font.MeasureString(text).X * 0.75f);
-        int w = textWidth + 32;
-        int h = 28;
+        int textWidth = (int)(_font.MeasureString(text).X * FontScale);
+        int w = textWidth + (int)(32 * _scaleFactor);
+        int h = (int)(28 * _scaleFactor);
         Rectangle rect = new Rectangle(x, y, w, h);
         _okButtonRect = rect;
 
@@ -967,6 +994,6 @@ public class MinesweeperGame : Game
 
         DrawRect(borderColor, rect);
         DrawRect(bgColor, new Rectangle(x + 1, y + 1, w - 2, h - 2));
-        _spriteBatch.DrawString(_font, text, new Vector2(x + (w - textWidth) / 2, y + 6), textColor, 0f, Vector2.Zero, 0.75f, SpriteEffects.None, 0f);
+        _spriteBatch.DrawString(_font, text, new Vector2(x + (w - textWidth) / 2, y + (int)(6 * _scaleFactor)), textColor, 0f, Vector2.Zero, FontScale, SpriteEffects.None, 0f);
     }
 }
