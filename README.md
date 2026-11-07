@@ -1,14 +1,26 @@
-﻿Classic **Minesweeper** game. Two UI implementations:
+﻿Classic **Minesweeper** game with two equal UI implementations built on the same core:
 - **WinForms** (Phase 5) — done (playable MVP).
-- **MonoGame** (Phase 6) — planned.
+- **MonoGame** (Phase 6) — done (playable MVP).
 
-Game logic (`MinesweeperCore`) is complete and covered by unit tests.
+Both versions are **feature-equivalent**: same rules, same input layout, same
+records file, same look & feel. Pick whichever you prefer — there is no
+"main" or "secondary" version.
+
+Game logic (`MinesweeperCore`) is shared between both UIs and covered by unit tests.
 
 ## For Players
 
-You don't need to install anything! Just download the latest `Minesweeper-vX.X.X-win-x64.zip` from the [Releases page](https://github.com/miptleha/cs-minesweeper/releases), extract it, and run `MinesweeperWinForms.exe`. 
+You don't need to install anything! Just download the release archive from the
+[Releases page](https://github.com/miptleha/cs-minesweeper/releases) and pick
+**one** of the two builds:
 
-The game is shipped as a self-contained single file, so the .NET Runtime is already bundled inside.
+| Archive | What it is | When to pick it |
+|---|---|---|
+| `MinesweeperWinForms-vX.X.X-win-x64.zip` | Native Windows Forms UI, single self-contained `.exe` | You want the simplest launch: one file, no extra folders. |
+| `MinesweeperMonoGame-vX.X.X-win-x64.zip` | MonoGame (DesktopGL) UI, `.exe` + `Content/` folder | You want the sprite-based renderer, or you're on a machine where the MonoGame backend behaves better. |
+
+Both archives are self-contained — the .NET Runtime is already bundled, nothing
+to install. Extract and run the `.exe` inside.
 
 ## For Developers
 

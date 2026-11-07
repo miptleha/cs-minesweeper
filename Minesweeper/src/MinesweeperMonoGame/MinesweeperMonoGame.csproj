@@ -10,13 +10,25 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <SelfContained>false</SelfContained>
+    <SelfContained>true</SelfContained>
     <DebugType>None</DebugType>
     <DebugSymbols>false</DebugSymbols>
+    <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
     <PublishDir>..\..\dist\$(MSBuildProjectName)\</PublishDir>
   </PropertyGroup>
+
+  <!-- Удаляем createdump.exe из папки публикации: на запуск игры он не влияет,
+     а нужен только для диагностики (создания дампов памяти). -->
+  <Target Name="RemoveCreatedumpFromPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_CreatedumpFile Include="$(PublishDir)createdump.exe" />
+    </ItemGroup>
+    <Delete Files="@(_CreatedumpFile)" />
+  </Target>
+
   <ItemGroup>
     <None Remove="Icon.ico" />
     <None Remove="Icon.bmp" />
