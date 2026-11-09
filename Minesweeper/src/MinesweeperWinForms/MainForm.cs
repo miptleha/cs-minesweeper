@@ -191,12 +191,18 @@ public class MainForm : Form
             SetSmiley("smiley_win.png");
             if (_engine.Difficulty != DifficultyLevel.Custom)
             {
-                using var prompt = new NamePromptForm();
-                if (prompt.ShowDialog(this) == DialogResult.OK)
+                // Проверяем, попал ли игрок в топ-5 (ядро уже сохранило рекорд, если попал)
+                bool isNewRecord = _engine.Records.Any(r => Math.Abs(r.TimeSeconds - _engine.Elapsed.TotalSeconds) < 0.1);
+
+                if (isNewRecord)
                 {
-                    _engine.PlayerName = prompt.PlayerName;
-                    if (_recordStore is JsonRecordStore jsonStore)
-                        jsonStore.RenameRecord(_engine.Difficulty, _engine.Elapsed.TotalSeconds, prompt.PlayerName);
+                    using var prompt = new NamePromptForm();
+                    if (prompt.ShowDialog(this) == DialogResult.OK)
+                    {
+                        _engine.PlayerName = prompt.PlayerName;
+                        if (_recordStore is JsonRecordStore jsonStore)
+                            jsonStore.RenameRecord(_engine.Difficulty, _engine.Elapsed.TotalSeconds, prompt.PlayerName);
+                    }
                 }
                 new RecordsForm(_recordStore).ShowDialog(this);
             }

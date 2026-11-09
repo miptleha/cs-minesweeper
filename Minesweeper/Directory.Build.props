@@ -5,7 +5,7 @@
   -->
   <PropertyGroup>
     <!-- Основная версия пакета/продукта. Следуйте SemVer: MAJOR.MINOR.PATCH -->
-    <Version>0.3.1</Version>
+    <Version>0.4.0</Version>
 
     <!--
       AssemblyVersion — это "бинарная" идентичность сборки, которая используется средой выполнения для связывания.
@@ -14,9 +14,9 @@
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
 
     <!-- FileVersion — версия, которая отображается в свойствах файла в Windows. -->
-    <FileVersion>0.3.1.0</FileVersion>
+    <FileVersion>0.4.0.0</FileVersion>
 
     <!-- InformationalVersion — подробная версия, которую видно в свойствах сборки и которая может включать суффиксы. -->
-    <InformationalVersion>0.3.1</InformationalVersion>
+    <InformationalVersion>0.4.0</InformationalVersion>
   </PropertyGroup>
 </Project>

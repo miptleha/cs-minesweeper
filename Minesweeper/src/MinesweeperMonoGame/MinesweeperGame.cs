@@ -212,8 +212,20 @@ public class MinesweeperGame : Game
                 SetSmiley("smiley_win");
                 if (_engine.Difficulty != DifficultyLevel.Custom)
                 {
-                    _nameBuffer = "Игрок";
-                    _screen = Screen.NamePrompt;
+                    // Проверяем, попал ли игрок в топ-5
+                    bool isNewRecord = _engine.Records.Any(r => Math.Abs(r.TimeSeconds - _engine.Elapsed.TotalSeconds) < 0.1);
+
+                    if (isNewRecord)
+                    {
+                        _nameBuffer = "Игрок";
+                        _screen = Screen.NamePrompt;
+                    }
+                    else
+                    {
+                        // Если не попал в топ-5 — сразу открываем экран рекордов
+                        _screen = Screen.Records;
+                        _recordsTab = 0;
+                    }
                 }
                 break;
             case GameState.Lost:

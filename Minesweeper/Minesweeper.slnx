@@ -3,6 +3,7 @@
     <Project Path="src/MinesweeperCore/MinesweeperCore.csproj" />
     <Project Path="src/MinesweeperMonoGame/MinesweeperMonoGame.csproj" />
     <Project Path="src/MinesweeperWinForms/MinesweeperWinForms.csproj" />
+    <Project Path="src/MinesweeperWpf/MinesweeperWpf.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MinesweeperCore.Tests/MinesweeperCore.Tests.csproj" />

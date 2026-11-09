@@ -1,0 +1,54 @@
+<Window x:Class="MinesweeperWpf.RecordsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:MinesweeperWpf"
+        Title="Лучшие результаты"
+        Width="360"
+        Height="280"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        KeyDown="OnKeyDown"
+        Background="#F0F0F0"
+        Icon="{x:Null}">
+    <TabControl Margin="5" Background="#F0F0F0">
+        <TabItem Header="Новичок">
+            <DataGrid x:Name="BeginnerList" AutoGenerateColumns="False" 
+                    IsReadOnly="True" HeadersVisibility="Column" 
+                    GridLinesVisibility="All" Background="White"
+                    BorderBrush="#A0A0A0" HorizontalGridLinesBrush="#E0E0E0" VerticalGridLinesBrush="#E0E0E0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="#" Binding="{Binding Rank}" Width="60" />
+                    <DataGridTextColumn Header="Имя" Binding="{Binding PlayerName}" Width="160" />
+                    <DataGridTextColumn Header="Время" Binding="{Binding TimeDisplay}" Width="90" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </TabItem>
+        
+        <TabItem Header="Любитель">
+            <DataGrid x:Name="IntermediateList" AutoGenerateColumns="False" 
+                    IsReadOnly="True" HeadersVisibility="Column" 
+                    GridLinesVisibility="All" Background="White"
+                    BorderBrush="#A0A0A0" HorizontalGridLinesBrush="#E0E0E0" VerticalGridLinesBrush="#E0E0E0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="#" Binding="{Binding Rank}" Width="60" />
+                    <DataGridTextColumn Header="Имя" Binding="{Binding PlayerName}" Width="160" />
+                    <DataGridTextColumn Header="Время" Binding="{Binding TimeDisplay}" Width="90" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </TabItem>
+
+        <TabItem Header="Профессионал">
+            <DataGrid x:Name="ExpertList" AutoGenerateColumns="False" 
+                    IsReadOnly="True" HeadersVisibility="Column" 
+                    GridLinesVisibility="All" Background="White"
+                    BorderBrush="#A0A0A0" HorizontalGridLinesBrush="#E0E0E0" VerticalGridLinesBrush="#E0E0E0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="#" Binding="{Binding Rank}" Width="60" />
+                    <DataGridTextColumn Header="Имя" Binding="{Binding PlayerName}" Width="160" />
+                    <DataGridTextColumn Header="Время" Binding="{Binding TimeDisplay}" Width="90" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </TabItem>
+    </TabControl>
+</Window>

@@ -1,0 +1,107 @@
+﻿<Window x:Class="MinesweeperWpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MinesweeperWpf"
+        mc:Ignorable="d"
+        Title="Сапёр"
+        SizeToContent="WidthAndHeight"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        RenderOptions.BitmapScalingMode="HighQuality" 
+        UseLayoutRounding="True" 
+        SnapsToDevicePixels="True">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />  <!-- Menu -->
+            <RowDefinition Height="48" />    <!-- TopPanel -->
+            <RowDefinition Height="Auto" />  <!-- Board -->
+        </Grid.RowDefinitions>
+
+        <!-- Меню -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="Игра">
+                <MenuItem Header="Новая игра" Click="OnNewGameClick" />
+                <Separator />
+                <MenuItem Header="Новичок" Click="OnBeginnerClick" />
+                <MenuItem Header="Любитель" Click="OnIntermediateClick" />
+                <MenuItem Header="Профессионал" Click="OnExpertClick" />
+                <Separator />
+                <MenuItem Header="Выход" Click="OnExitClick" />
+            </MenuItem>
+            <MenuItem Header="Справка">
+                <MenuItem Header="Лучшие результаты" Click="OnRecordsClick" />
+                <Separator />
+                <MenuItem Header="О программе" Click="OnAboutClick" />
+            </MenuItem>
+        </Menu>
+
+        <!-- Верхняя панель: LED-счётчик мин | Смайлик | LED-таймер -->
+        <Grid Grid.Row="1" Background="#F0F0F0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Счётчик мин -->
+            <ItemsControl Grid.Column="0" ItemsSource="{Binding MineCounter.Digits}" Margin="10,8,0,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Image Source="{Binding}" Width="24" Height="32" Stretch="Fill" 
+                               SnapsToDevicePixels="True" RenderOptions.EdgeMode="Aliased" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Смайлик-кнопка -->
+            <Button Grid.Column="1" Width="32" Height="32" HorizontalAlignment="Center" Margin="0,8,0,0"
+                    Focusable="False" Click="OnSmileyClick">
+                <Image Source="{Binding SmileyImage}" Width="28" Height="28" />
+            </Button>
+
+            <!-- Таймер -->
+            <ItemsControl Grid.Column="2" ItemsSource="{Binding TimerDisplay.Digits}" Margin="0,8,10,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Image Source="{Binding}" Width="24" Height="32" Stretch="Fill" 
+                               SnapsToDevicePixels="True" RenderOptions.EdgeMode="Aliased" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+
+        <!-- Игровое поле -->
+        <ItemsControl x:Name="Board" Grid.Row="2" ItemsSource="{Binding Cells}" Background="#C0C0C0"
+                      HorizontalAlignment="Left" VerticalAlignment="Top"
+                      MouseLeftButtonDown="OnBoardMouseDown"
+                      MouseLeftButtonUp="OnBoardMouseUp"
+                      MouseRightButtonDown="OnBoardMouseDown"
+                      MouseRightButtonUp="OnBoardMouseUp">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Rows="{Binding Height}" Columns="{Binding Width}" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid Width="24" Height="24">
+                        <Image Source="{Binding BackgroundImage}" Stretch="Fill" SnapsToDevicePixels="True" RenderOptions.EdgeMode="Aliased" />
+                        <Image Source="{Binding OverlayImage}" Stretch="Fill" SnapsToDevicePixels="True" RenderOptions.EdgeMode="Aliased" />
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
+</Window>
