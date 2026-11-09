@@ -430,7 +430,7 @@ public class MinesweeperGame : Game
             return;
         }
 
-        if (_suppressNextMouseUp)
+        if (_suppressNextMouseUp && _chordCell is null)
         {
             _suppressNextMouseUp = false;
             ResetSmileyForCurrentState();

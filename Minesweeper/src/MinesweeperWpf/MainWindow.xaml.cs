@@ -486,7 +486,7 @@ public partial class MainWindow : Window
         if (e.ChangedButton == MouseButton.Right) _isRightDown = false;
 
         // Suppress — отмена следующего MouseUp после chord
-        if (_suppressNextMouseUp)
+        if (_suppressNextMouseUp && _chordCandidate is null)
         {
             _suppressNextMouseUp = false;
             ResetSmileyForCurrentState();
