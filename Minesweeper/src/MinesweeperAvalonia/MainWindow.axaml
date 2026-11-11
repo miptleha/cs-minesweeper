@@ -1,0 +1,107 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:MinesweeperAvalonia.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="250" d:DesignHeight="200"
+        x:Class="MinesweeperAvalonia.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Сапёр"
+        SizeToContent="WidthAndHeight"
+        CanResize="False"
+        CanMinimize="False"
+        CanMaximize="False"
+        WindowStartupLocation="CenterScreen"
+        Icon="/Resources/icon.ico">
+
+    <Grid RowDefinitions="Auto,48,Auto">
+        <!-- Row 0: Menu -->
+        <Menu Grid.Row="0" Background="#F0F0F0">
+            <MenuItem Header="_Игра">
+                <MenuItem Header="_Новая игра" Click="OnNewGameClick"/>
+                <Separator/>
+                <MenuItem Header="_Новичок" Click="OnBeginnerClick"/>
+                <MenuItem Header="_Любитель" Click="OnIntermediateClick"/>
+                <MenuItem Header="_Профессионал" Click="OnExpertClick"/>
+                <Separator/>
+                <MenuItem Header="_Выход" Click="OnExitClick"/>
+            </MenuItem>
+            <MenuItem Header="_Справка">
+                <MenuItem Header="_Лучшие результаты" Click="OnRecordsClick"/>
+                <Separator/>
+                <MenuItem Header="_О программе" Click="OnAboutClick"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- Row 1: TopPanel — MineCounter | Smiley | TimerDisplay -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Background="#F0F0F0">
+            
+            <!-- Column 0: MineCounter -->
+            <ItemsControl Grid.Column="0" ItemsSource="{Binding MineCounter.Digits}" Margin="10,8,0,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Image Source="{Binding}" Width="24" Height="32" Stretch="Fill"
+                            RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Column 1: Smiley button -->
+            <Button Grid.Column="1" HorizontalAlignment="Center" Margin="0,8,0,0" Click="OnSmileyClick"
+                    Width="32" Height="32">
+                <Image Source="{Binding SmileyImage}" Width="28" Height="28"
+                    RenderOptions.BitmapInterpolationMode="HighQuality"/>
+            </Button>
+
+            <!-- Column 2: TimerDisplay -->
+            <ItemsControl Grid.Column="2" ItemsSource="{Binding TimerDisplay.Digits}" Margin="0,8,10,0" HorizontalAlignment="Right">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Image Source="{Binding}" Width="24" Height="32" Stretch="Fill"
+                            RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+
+        <!-- Row 2: Board -->
+        <ItemsControl x:Name="BoardControl" Grid.Row="2"
+                      ItemsSource="{Binding Cells}"
+                      Background="#C0C0C0"
+                      HorizontalAlignment="Left"
+                      VerticalAlignment="Top"
+                      PointerPressed="OnBoardPointerPressed"
+                      PointerReleased="OnBoardPointerReleased"
+                      PointerMoved="OnBoardPointerMoved"
+                      PointerEntered="OnBoardPointerEntered"
+                      PointerExited="OnBoardPointerExited">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Rows="{Binding Height}" Columns="{Binding Width}"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:CellViewModel">
+                    <Grid Width="24" Height="24">
+                        <Image Source="{Binding BackgroundImage}"
+                               Stretch="Fill"
+                               RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                        <Image Source="{Binding OverlayImage}"
+                               Stretch="Fill"
+                               RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
+</Window>

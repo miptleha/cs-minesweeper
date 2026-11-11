@@ -1,0 +1,189 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="using:MinesweeperAvalonia.Windows"
+        mc:Ignorable="d"
+        x:Class="MinesweeperAvalonia.Windows.RecordsWindow"
+        x:DataType="local:RecordsWindow"
+        Title="Лучшие результаты"
+        Width="380"
+        Height="300"
+        WindowStartupLocation="CenterOwner"
+        Icon="{x:Null}"
+        Background="#F0F0F0">
+    
+    <Window.Styles>
+        <!-- ========================================== -->
+        <!-- КЛАССИЧЕСКИЙ ВИД ВКЛАДОК (Жесткие рамки)   -->
+        <!-- ========================================== -->
+        
+        <!-- 1. Шаблон самого TabControl (рисует нижнюю линию) -->
+        <Style Selector="TabControl">
+            <!-- 1. Задаем панель для вкладок (горизонтальный StackPanel) -->
+            <Setter Property="ItemsPanel">
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </Setter>
+
+            <!-- 2. Определяем шаблон TabControl -->
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid RowDefinitions="Auto,*">
+                        <!-- Полоса с вкладками -->
+                        <Border Grid.Row="0" BorderBrush="#A0A0A0" BorderThickness="0,0,0,1" Background="Transparent">
+                            <!-- Используем TemplateBinding для ItemsPanel -->
+                            <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                        </Border>
+                        <!-- Область контента -->
+                        <Border Grid.Row="1" BorderBrush="#A0A0A0" BorderThickness="1,0,1,1" Background="White">
+                            <ContentPresenter Name="PART_SelectedContentHost" 
+                                            Content="{TemplateBinding SelectedContent}" 
+                                            ContentTemplate="{TemplateBinding SelectedContentTemplate}" />
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <!-- 2. Шаблон самой вкладки (жесткая рамка, без бирюзы) -->
+        <Style Selector="TabItem">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <!-- Рамка вокруг вкладки. Снизу рамки нет (BorderThickness 1,1,1,0), 
+                         чтобы вкладка сливалась с контентом -->
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="#A0A0A0"
+                            BorderThickness="1,1,1,0"
+                            Margin="{TemplateBinding Margin}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Header}"
+                                          ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <!-- 3. Цвета вкладок (невыделенная) -->
+        <Style Selector="TabItem">
+            <Setter Property="Background" Value="#F0F0F0" />
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="Margin" Value="0,0,2,0" />
+        </Style>
+
+        <!-- 4. Цвета вкладок (выделенная): белый фон, опускаем на 1px вниз, чтобы перекрыть линию -->
+        <Style Selector="TabItem:selected">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="Margin" Value="0,0,2,-1" /> 
+            <Setter Property="ZIndex" Value="1" />
+        </Style>
+        
+        <!-- Наведение мыши -->
+        <Style Selector="TabItem:pointerover">
+            <Setter Property="Background" Value="#E5E5E5" />
+        </Style>
+        <Style Selector="TabItem:selected:pointerover">
+            <Setter Property="Background" Value="White" />
+        </Style>
+
+
+        <!-- ========================================== -->
+        <!-- КОМПАКТНЫЙ DATA GRID (как в WPF)           -->
+        <!-- ========================================== -->
+        <Style Selector="DataGrid">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="RowHeight" Value="22" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="RowBackground" Value="White" />
+            <Setter Property="HorizontalGridLinesBrush" Value="#E0E0E0" />
+            <Setter Property="VerticalGridLinesBrush" Value="#E0E0E0" />
+            <Setter Property="BorderThickness" Value="0" /> <!-- Убираем рамку, она уже есть у TabControl -->
+        </Style>
+
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Background" Value="#F0F0F0" />
+            <Setter Property="BorderBrush" Value="#C0C0C0" />
+            <Setter Property="BorderThickness" Value="0,0,1,1" />
+            <Setter Property="Padding" Value="4,2" />
+        </Style>
+
+        <Style Selector="DataGridCell">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <!-- Классический синий цвет выделения, БЕЗ БИРЮЗЫ -->
+        <Style Selector="DataGridRow:selected">
+            <Setter Property="Background" Value="#0078D7" />
+        </Style>
+        <Style Selector="DataGridRow:selected DataGridCell">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <!-- Убираем лишние системные рамки фокуса -->
+        <Style Selector="DataGridRow:selected /template/ Rectangle">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+    </Window.Styles>
+
+    <TabControl Margin="6">
+        <!-- ========== Новичок ========== -->
+        <TabItem Header="Новичок">
+            <DataGrid ItemsSource="{Binding BeginnerRecords}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      GridLinesVisibility="All"
+                      HeadersVisibility="Column"
+                      CanUserSortColumns="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="#" Binding="{Binding Rank}" Width="40" />
+                    <DataGridTextColumn Header="Имя" Binding="{Binding PlayerName}" Width="*" />
+                    <DataGridTextColumn Header="Время" Binding="{Binding TimeDisplay}" Width="100" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </TabItem>
+        
+        <!-- ========== Любитель ========== -->
+        <TabItem Header="Любитель">
+            <DataGrid ItemsSource="{Binding IntermediateRecords}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      GridLinesVisibility="All"
+                      HeadersVisibility="Column"
+                      CanUserSortColumns="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="#" Binding="{Binding Rank}" Width="40" />
+                    <DataGridTextColumn Header="Имя" Binding="{Binding PlayerName}" Width="*" />
+                    <DataGridTextColumn Header="Время" Binding="{Binding TimeDisplay}" Width="100" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </TabItem>
+
+        <!-- ========== Профессионал ========== -->
+        <TabItem Header="Профессионал">
+            <DataGrid ItemsSource="{Binding ExpertRecords}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      GridLinesVisibility="All"
+                      HeadersVisibility="Column"
+                      CanUserSortColumns="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="#" Binding="{Binding Rank}" Width="40" />
+                    <DataGridTextColumn Header="Имя" Binding="{Binding PlayerName}" Width="*" />
+                    <DataGridTextColumn Header="Время" Binding="{Binding TimeDisplay}" Width="100" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </TabItem>
+    </TabControl>
+</Window>

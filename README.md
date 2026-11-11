@@ -1,7 +1,4 @@
-﻿Classic **Minesweeper** game with three equal UI implementations built on the same core:
-- **WinForms** (Phase 5) — done.
-- **MonoGame** (Phase 6) — done.
-- **WPF** (Phase 7) — done.
+﻿Classic **Minesweeper** game with three equal UI implementations built on the same core: **WinForms**, **MonoGame**, **WPF**, **Avalonia**.
 
 All versions are **feature-equivalent**: same rules, same input layout, same
 records file, same look & feel. Pick whichever you prefer — there is no
@@ -20,6 +17,7 @@ You don't need to install anything! Just download the release archive from the
 | `MinesweeperWinForms-vX.X.X-win-x64.zip` | Native Windows Forms UI, single self-contained `.exe` | You want the simplest launch: one file, no extra folders. |
 | `MinesweeperMonoGame-vX.X.X-win-x64.zip` | MonoGame (DesktopGL) UI, `.exe` + `Content/` folder | You want the sprite-based renderer, or you're on a machine where the MonoGame backend behaves better. |
 | `MinesweeperWpf-vX.X.X-win-x64.zip` | WPF (Windows Presentation Foundation) UI, single self-contained `.exe` | You prefer modern XAML/MVVM rendering and smooth native Windows controls. |
+| `MinesweeperAvalonia-vX.X.X-win-x64.zip` | Avalonia UI, single self-contained `.exe` | You want a cross-platform XAML UI with smooth rendering. |
 
 All archives are self-contained — the .NET Runtime is already bundled, nothing
 to install. Extract and run the `.exe` inside.
@@ -52,6 +50,9 @@ dotnet run --project src/MinesweeperMonoGame
 
 # Run the WPF UI (Debug)
 dotnet run --project src/MinesweeperWpf
+
+# Run the Avalonia UI (Debug)
+dotnet run --project src/MinesweeperAvalonia
 
 # Publish (Release, win-x64)
 dotnet publish -c Release

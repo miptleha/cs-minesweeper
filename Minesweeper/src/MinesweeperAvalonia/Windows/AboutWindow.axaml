@@ -1,0 +1,37 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="MinesweeperAvalonia.Windows.AboutWindow"
+        Title="О программе"
+        Width="340"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Icon="{x:Null}">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+        <!-- Верх: иконка + текст -->
+        <Grid Grid.Row="0" ColumnDefinitions="64,Auto" Margin="0,0,0,20">
+            <Image Grid.Column="0" Source="/Resources/bomb.png" Width="64" Height="64"/>
+            <StackPanel Grid.Column="1" Orientation="Vertical" Margin="12,0,0,0">
+                <TextBlock FontSize="20" FontWeight="Bold" Text="Сапёр"/>
+                <TextBlock Text="Классическая игра «Сапёр»." Margin="0,4,0,0"/>
+                <TextBlock Text="Автор: miptleha." Margin="0,4,0,0"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Середина: ссылка на GitHub -->
+        <TextBlock Grid.Row="1"
+                   TextDecorations="Underline"
+                   Foreground="Blue"
+                   Text="Скачать последнюю версию с GitHub"
+                   PointerPressed="OnLinkPointerPressed"
+                   Cursor="Hand"
+                   Margin="0,0,0,20"/>
+
+        <!-- Низ: кнопка OK -->
+        <Button Grid.Row="2" Content="OK" HorizontalAlignment="Center"
+                IsDefault="True" IsCancel="True" Width="80"/>
+    </Grid>
+</Window>
