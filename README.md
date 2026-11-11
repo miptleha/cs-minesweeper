@@ -7,7 +7,8 @@ All versions are **feature-equivalent**: same rules, same input layout, same
 records file, same look & feel. Pick whichever you prefer — there is no
 "main" or "secondary" version.
 
-Game logic (`MinesweeperCore`) is shared between all UIs and covered by unit tests.
+Game logic (`MinesweeperCore`) is shared between all UIs and covered by unit tests.  
+More information in the [documents](Minesweeper/docs) folder.
 
 ## For Players
 
