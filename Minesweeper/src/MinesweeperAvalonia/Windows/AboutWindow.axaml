@@ -7,6 +7,9 @@
         Title="О программе"
         Width="340"
         SizeToContent="Height"
+        CanResize="False"
+        CanMinimize="False"
+        CanMaximize="False"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         Icon="{x:Null}">
@@ -32,6 +35,6 @@
 
         <!-- Низ: кнопка OK -->
         <Button Grid.Row="2" Content="OK" HorizontalAlignment="Center"
-                IsDefault="True" IsCancel="True" Width="80"/>
+                IsDefault="True" IsCancel="True" Width="80" Click="OnOkClick"/>
     </Grid>
 </Window>

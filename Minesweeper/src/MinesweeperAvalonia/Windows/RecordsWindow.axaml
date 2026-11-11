@@ -9,6 +9,9 @@
         Title="Лучшие результаты"
         Width="380"
         Height="300"
+        CanResize="False"
+        CanMinimize="False"
+        CanMaximize="False"
         WindowStartupLocation="CenterOwner"
         Icon="{x:Null}"
         Background="#F0F0F0">
