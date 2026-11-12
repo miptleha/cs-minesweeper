@@ -10,8 +10,7 @@ Phase 5/6.
 
 - Поле рисуется по `CellInfo` и ассетам из `assets/`, встроенным в DLL как `Resource`.
 - Левый клик открывает клетку (по отпусканию), правый — циклически меняет метку,
-  Ctrl+ЛКМ = `CycleMark`, двойной ЛКМ = `OpenCell` + `Chord`, средняя кнопка и
-  ЛКМ+ПКМ = `Chord`.
+  Ctrl+ЛКМ = `CycleMark`, средняя кнопка и ЛКМ+ПКМ = `Chord`.
 - Смайлик-кнопка показывает состояние: `smiley` / `smiley_oh` / `smiley_win` / `smiley_lose`.
 - LED-счётчик мин и таймер обновляются в реальном времени; отрицательный счётчик
   рисуется через `minus.png` (по §15 `02-GAME-RULES.md`).
@@ -293,13 +292,9 @@ else: // Closed
 | ЛКМ по клетке | `MouseUp`, `Left` | `OpenCell` |
 | ПКМ по клетке | `MouseUp`, `Right` | `CycleMark` |
 | Ctrl+ЛКМ | `MouseUp`, `Left` + `Keyboard.IsKeyDown(Key.LeftCtrl)` | `CycleMark` |
-| Двойной ЛКМ | тот же `CellPoint` + Δ ≤ `SystemInformation.DoubleClickTime` | `OpenCell` + `Chord` |
 | ЛКМ+ПКМ | обе зажаты → отпускание любой | `Chord` |
 | Средняя кнопка | `MouseDown`, `Middle` | `Chord` |
 | ЛКМ по смайлику | `Button.Click` | `StartNewGame` |
-
-`SystemInformation` в WPF — из `System.Windows.Forms` (`using System.Windows.Forms;`).
-Если не хочется тянуть WinForms: `TimeSpan.FromMilliseconds(500)` — константа.
 
 ### 6.2. Порядок в `OnBoardMouseUp` (по образцу `09` §6.2)
 
@@ -312,9 +307,7 @@ else: // Closed
    a. ResetSmileyForCurrentState()
    b. point = ToCellPoint(e.GetPosition(Board))
    c. если Ctrl — CycleMark
-      иначе если (now - _lastClickTime) ≤ DoubleClickMs && same point:
-          Chord, сбросить _lastClickPoint
-      иначе OpenCell, сохранить _lastClickPoint/_lastClickTime
+      иначе OpenCell
 5. Right: CycleMark
 ```
 

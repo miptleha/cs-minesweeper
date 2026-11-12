@@ -530,13 +530,6 @@ public partial class MainWindow : Window
                 return;
             }
 
-            // Двойной клик — нативно в WPF через e.ClickCount
-            if (e.ClickCount == 2)
-            {
-                _vm.Engine.Chord(point.Value);
-                return;
-            }
-
             // Одиночный клик — OpenCell
             _vm.Engine.OpenCell(point.Value);
         }

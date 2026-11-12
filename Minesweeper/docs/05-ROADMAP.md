@@ -68,7 +68,7 @@ Development` workload, если ставили VS).
 **Что переиспользуется из WinForms:**
 
 - `JsonRecordStore` из `MinesweeperCore.Infrastructure` — общий JSON-файл рекордов.
-- Логика ввода (Ctrl+ЛКМ → `CycleMark`, двойной клик → `Chord`) — та же, через `MouseUp`.
+- Логика ввода (Ctrl+ЛКМ → `CycleMark`) — та же, через `MouseUp`.
 - Список ассетов — тот же (`assets/*.png` + `icon.ico`).
 
 **Что нужно новое:** отдельная спецификация `docs/11-PHASE-7-WPF.md` (по образцу
@@ -180,8 +180,8 @@ self-contained exe) благодаря Native AOT. Чистый эксперим
 3. **Общие ассеты** из `assets/` — копируются в проект по конвенции фреймворка
    (см. `04-AGENT-GUIDE.md`, раздел «Shared Assets»). Имена файлов не меняются.
 4. **Раскладка ввода — по §6.1 `09-PHASE-5-WINFROMS.md`**: ЛКМ = `OpenCell`,
-   ПКМ = `CycleMark`, Ctrl+ЛКМ = `CycleMark`, двойной ЛКМ = `OpenCell` +
-   `Chord`, ЛКМ+ПКМ или средняя кнопка = `Chord`, клик по смайлику = `StartNewGame`.
+   ПКМ = `CycleMark`, Ctrl+ЛКМ = `CycleMark`,
+   ЛКМ+ПКМ или средняя кнопка = `Chord`, клик по смайлику = `StartNewGame`.
    Поведение должно быть идентичным во всех UI.
 5. **Смайлик и LED-счётчики** — визуально как в WinForms/MonoGame: `smiley_oh`
    при `MouseDown` на поле, `smiley_win`/`smiley_lose` по `GameStateChanged`,

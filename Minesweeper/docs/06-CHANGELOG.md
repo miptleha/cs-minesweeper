@@ -3,6 +3,14 @@
 Все заметные изменения в проекте. Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 проект придерживается [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [Unreleased]
+
+### Changed
+
+- **Все UI (WinForms, MonoGame, WPF, Avalonia):** Удалён двойной клик ЛКМ как триггер аккорда (не работал нормально).
+
+---
+
 ## [0.5.0] - 2026-11-12
 
 Релиз 0.5.0 знаменует завершение Phase 8 — добавлен полноценный кроссплатформенный интерфейс на Avalonia UI.

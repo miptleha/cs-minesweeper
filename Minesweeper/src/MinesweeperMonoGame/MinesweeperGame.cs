@@ -47,8 +47,6 @@ public class MinesweeperGame : Game
     private KeyboardState _prevKeyboard;
     private bool _suppressNextMouseUp;
     private CellPoint? _chordCell;
-    private CellPoint? _lastClickPoint;
-    private TimeSpan _lastClickTime;
     private bool _wasInsideBoard;
     private string _smiley = "smiley";
     private CellPoint? _triggerCell;
@@ -73,7 +71,6 @@ public class MinesweeperGame : Game
     private int LedW => (int)(24 * _scaleFactor);
     private int LedH => (int)(32 * _scaleFactor);
     private int PanelTopMargin => (int)(8 * _scaleFactor);
-    private int DoubleClickMs => 500;
     private float FontScale => 0.75f * _scaleFactor;
 
     // --- Данные меню (T5) ---
@@ -161,7 +158,6 @@ public class MinesweeperGame : Game
         _triggerCell = null;
         _chordCell = null;
         _suppressNextMouseUp = false;
-        _lastClickPoint = null;
         _wasInsideBoard = false;
         _screen = Screen.Main;
         _openMenu = MenuKind.None;
@@ -245,7 +241,7 @@ public class MinesweeperGame : Game
     {
         try
         {
-            UpdateInput(gameTime);
+            UpdateInput();
             UpdateTimer();
 
             var mouseState = Mouse.GetState();
@@ -265,7 +261,7 @@ public class MinesweeperGame : Game
         }
     }
 
-    private void UpdateInput(GameTime gameTime)
+    private void UpdateInput()
     {
         var m = Mouse.GetState();
         var pos = m.Position;
@@ -316,7 +312,7 @@ public class MinesweeperGame : Game
         _wasInsideBoard = insideBoard;
 
         if (m.LeftButton == ButtonState.Released && _prevMouse.LeftButton == ButtonState.Pressed)
-            OnLeftUp(pos, gameTime);
+            OnLeftUp(pos);
 
         if (m.RightButton == ButtonState.Released && _prevMouse.RightButton == ButtonState.Pressed)
             OnRightUp(pos);
@@ -402,7 +398,7 @@ public class MinesweeperGame : Game
         }
     }
 
-    private void OnLeftUp(Point pos, GameTime gameTime)
+    private void OnLeftUp(Point pos)
     {
         if (_screen != Screen.Main)
         {
@@ -464,20 +460,7 @@ public class MinesweeperGame : Game
         }
         else
         {
-            bool isDouble = _lastClickPoint == point.Value
-                         && (gameTime.TotalGameTime - _lastClickTime).TotalMilliseconds <= DoubleClickMs;
-
-            if (isDouble)
-            {
-                _engine.Chord(point.Value);
-                _lastClickPoint = null;
-            }
-            else
-            {
-                _engine.OpenCell(point.Value);
-                _lastClickPoint = point.Value;
-                _lastClickTime = gameTime.TotalGameTime;
-            }
+            _engine.OpenCell(point.Value);
         }
         UpdateMineCounter();
     }

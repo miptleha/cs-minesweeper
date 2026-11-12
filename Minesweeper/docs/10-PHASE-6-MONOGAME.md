@@ -8,7 +8,7 @@
 
 Запускаемое MonoGame-приложение, в котором можно сыграть полную партию:
 - Поле рисуется по `CellInfo` и текстурам из Content Pipeline.
-- ЛКМ / ПКМ / Ctrl+ЛКМ / двойной ЛКМ / ЛКМ+ПКМ / средняя кнопка — все пути
+- ЛКМ / ПКМ / Ctrl+ЛКМ / ЛКМ+ПКМ / средняя кнопка — все пути
   открытия/метки/аккорда работают по правилам `02-GAME-RULES.md`.
 - Смайлик-кнопка показывает состояние: `smiley` / `smiley_oh` / `smiley_win` / `smiley_lose`.
 - Счётчик мин и таймер обновляются в реальном времени, отрицательный счётчик
@@ -54,8 +54,6 @@ private MouseState _prevMouse;
 private KeyboardState _prevKeyboard;
 private bool _suppressNextMouseUp;
 private CellPoint? _chordCell;
-private CellPoint? _lastClickPoint;
-private TimeSpan _lastClickTime;
 private bool _wasInsideBoard;
 private string _smiley = "smiley";
 private CellPoint? _triggerCell;
@@ -75,7 +73,6 @@ private const int LedW            = 24;
 private const int LedH            = 32;
 private const int LedGap          = 10;
 private const int PanelTopMargin  = 8;
-private const int DoubleClickMs   = 500;   // как SystemInformation.DoubleClickTime по умолчанию
 ```
 
 **Ключевое:** события ядра эмитятся **внутри `Update()`**. Их обработчики
@@ -370,7 +367,6 @@ private void DrawCell(CellInfo info)
 | ЛКМ по клетке | edge `Released ← Pressed` | `engine.OpenCell(point)` |
 | ПКМ по клетке | edge `Released ← Pressed` | `engine.CycleMark(point)` |
 | Ctrl+ЛКМ | ЛКМ-up + `Keyboard.IsKeyDown(LeftControl \| RightControl)` | `engine.CycleMark(point)` |
-| Двойной ЛКМ | ЛКМ-up по той же клетке, `Δ ≤ 500 мс` | 2-й клик → `engine.Chord(point)` |
 | ЛКМ+ПКМ | обе зажаты → отпускание любой | `engine.Chord(point)` |
 | Средняя кнопка | edge `Pressed` (**down**, не up) | `engine.Chord(point)` |
 | ЛКМ по смайлику | ЛКМ-up в `SmileyRect` | `StartNewGame(_engine.Settings)` |
@@ -379,15 +375,10 @@ private void DrawCell(CellInfo info)
 **Почему средняя кнопка — на `Pressed`:** это «мгновенный» аккорд, без
 ожидания отпускания. В WinForms-версии то же поведение.
 
-**Про двойной клик:** в MonoGame DesktopGL **нет** встроенного события
-`DoubleClick` (ни в `Mouse`, ни в `GameWindow`). Делаем вручную — та же
-edge-детекция + константа `DoubleClickMs = 500`. Это не P/Invoke, всё в
-управляемом коде.
-
 ### 6.2. `UpdateInput()`
 
 ```csharp
-private void UpdateInput(GameTime gameTime)
+private void UpdateInput()
 {
     var m = Mouse.GetState();
     var pos = m.Position;
@@ -434,7 +425,7 @@ private void UpdateInput(GameTime gameTime)
 
     // ЛКМ up.
     if (m.LeftButton == ButtonState.Released && _prevMouse.LeftButton == ButtonState.Pressed)
-        OnLeftUp(pos, gameTime);
+        OnLeftUp(pos);
 
     // ПКМ up.
     if (m.RightButton == ButtonState.Released && _prevMouse.RightButton == ButtonState.Pressed)
@@ -455,7 +446,7 @@ private void UpdateInput(GameTime gameTime)
 ### 6.3. `OnLeftUp`
 
 ```csharp
-private void OnLeftUp(Point pos, GameTime gameTime)
+private void OnLeftUp(Point pos)
 {
     // Погасить второй MouseUp после аккорда.
     if (_suppressNextMouseUp)
@@ -495,21 +486,7 @@ private void OnLeftUp(Point pos, GameTime gameTime)
     }
     else
     {
-        // Двойной клик: та же клетка + интервал ≤ 500 мс.
-        bool isDouble = _lastClickPoint == point.Value
-                     && (gameTime.TotalGameTime - _lastClickTime).TotalMilliseconds <= DoubleClickMs;
-
-        if (isDouble)
-        {
-            _engine.Chord(point.Value);
-            _lastClickPoint = null;   // тройной клик не должен дать второй аккорд
-        }
-        else
-        {
-            _engine.OpenCell(point.Value);
-            _lastClickPoint = point.Value;
-            _lastClickTime = gameTime.TotalGameTime;
-        }
+        _engine.OpenCell(point.Value);
     }
     UpdateMineCounter();
 }
@@ -546,7 +523,6 @@ private void StartGame(GameSettings settings)
     _triggerCell = null;
     _chordCell = null;
     _suppressNextMouseUp = false;
-    _lastClickPoint = null;     // иначе первый клик новой игры может слиться с последним старой
     _wasInsideBoard = false;
     _screen = Screen.Main;
     _openMenu = MenuKind.None;
@@ -750,8 +726,6 @@ Esc не закрывает игру на главном экране, а тол
 - **Не рисовать `cell_exploded` для всех мин.** Только для `_triggerCell`.
 - **Не использовать `SamplerState.LinearClamp`.** Только `PointClamp`.
 - **Не масштабировать `timer_N` нецелочисленно.** Рисовать в `(24, 32)`.
-- **Не забывать `_lastClickPoint = null` в `StartGame`.** Иначе первый клик новой
-  игры сольётся с последним старой в «двойной».
 - **Не забывать `ApplyWindowSize()` при смене сложности.**
 - **Не ссылаться в этом документе на `09-PHASE-5-WINFROMS.md`.** Документ
   самодостаточен: всё поведение — из `02-GAME-RULES.md`.

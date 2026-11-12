@@ -87,7 +87,6 @@ Windows XP: открытие и постановка метки происход
 | ЛКМ по клетке | `MouseUp`, `Left` | `GameEngine.OpenCell` |
 | ПКМ по клетке | `MouseUp`, `Right` | `GameEngine.CycleMark` |
 | **Ctrl+ЛКМ** по клетке | `MouseUp`, `Left` + `Control` | `GameEngine.CycleMark` |
-| Двойной ЛКМ по клетке | `MouseUp`, `Left`, `Clicks == 2` | 1-й клик: `OpenCell`; 2-й: `Chord` (если клетка стала `Number` и флаги совпали) |
 | ЛКМ+ПКМ одновременно | обе кнопки зажаты, отпускание любой | `GameEngine.Chord` |
 | Средняя кнопка | `MouseDown`, `Middle` | `GameEngine.Chord` |
 | ЛКМ по смайлику | `Button.Click` | `StartNewGame` |
@@ -97,11 +96,6 @@ Windows XP: открытие и постановка метки происход
 - **Ctrl+ЛКМ** — замена правого клика (`CycleMark`) для тачпадов, где ПКМ
   не работает или срабатывает нестабильно. Циклит метку
   `Closed → Flagged → Question → Closed`, счётчик мин обновляется.
-- **Двойной клик ЛКМ** (Vista+) — аккорд в два клика. Первый клик открывает
-  клетку обычным `OpenCell` (или проигрывает, если под ней мина). Второй
-  клик вызывает `Chord` на уже открытой клетке: если она стала `Number` и
-  число флагов вокруг совпадает с цифрой — открываются соседи; иначе no-op.
-  Для игрока это один жест «двойной клик», для кода — `OpenCell` + `Chord`.
 - **Средняя кнопка** — на тачпадах обычно 3-finger tap. Аккорд срабатывает
   мгновенно, без ожидания второй кнопки.
 
@@ -117,8 +111,6 @@ Windows XP: открытие и постановка метки происход
    a. ResetSmileyForCurrentState()
    b. point = ToCellPoint(e.X, e.Y); если null — выход.
    c. если Ctrl зажат                — CycleMark(point)   [аналог ПКМ]
-      иначе если Clicks == 2
-              и IsOpenedNumber(point)  — Chord(point)       [Vista+]
       иначе                            — OpenCell(point)
    d. UpdateMineCounter()
 5. Right:

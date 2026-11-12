@@ -28,10 +28,6 @@ public class MainForm : Form
     private CellPoint? _chordCandidate = null;
     private bool _suppressNextMouseUp = false;
 
-    // Поля для ручного определения двойного клика
-    private CellPoint? _lastClickPoint = null;
-    private DateTime _lastClickTime = DateTime.MinValue;
-
     private float ScaleFactor => DeviceDpi / 96f;
     private int GetCellSize() => (int)(24 * ScaleFactor);
 
@@ -167,7 +163,6 @@ public class MainForm : Form
         _downButtons = MouseButtons.None;
         _chordCandidate = null;
         _suppressNextMouseUp = false;
-        _lastClickPoint = null;
 
         _engine.StartNewGame(settings);
 
@@ -310,25 +305,8 @@ public class MainForm : Form
             }
             else
             {
-                // КАСТОМНОЕ ОПРЕДЕЛЕНИЕ ДВОЙНОГО КЛИКА (Устойчиво к сдвигу тачпада)
-                DateTime now = DateTime.Now;
-                bool isDoubleClick = _lastClickPoint.HasValue
-                                     && _lastClickPoint.Value == point.Value
-                                     && (now - _lastClickTime).TotalMilliseconds <= SystemInformation.DoubleClickTime;
-
-                if (isDoubleClick)
-                {
-                    // Это двойной клик по той же клетке! Делаем аккорд.
-                    _engine.Chord(point.Value);
-                    _lastClickPoint = null; // Сбрасываем, чтобы тройной клик не сработал как еще один аккорд
-                }
-                else
-                {
-                    // Обычный одиночный клик — открываем клетку.
-                    _engine.OpenCell(point.Value);
-                    _lastClickPoint = point.Value;
-                    _lastClickTime = now;
-                }
+                // Обычный одиночный клик — открываем клетку.
+                _engine.OpenCell(point.Value);
             }
 
             UpdateMineCounter();
