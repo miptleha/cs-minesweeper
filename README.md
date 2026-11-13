@@ -56,6 +56,9 @@ dotnet run --project src/MinesweeperWpf
 # Run the Avalonia UI (Debug)
 dotnet run --project src/MinesweeperAvalonia
 
+# Run the Blazor Hybrid UI (Debug)
+dotnet run --project src/MinesweeperBlazorHybrid
+
 # Publish (Release, win-x64)
 dotnet publish -c Release
 ```
