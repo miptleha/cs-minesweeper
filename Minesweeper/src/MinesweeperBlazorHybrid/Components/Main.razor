@@ -1,0 +1,672 @@
+@inject GameEngine Engine
+@inject WindowSizeService WindowSize
+@inject IJSRuntime JS
+@inject Func<Task> ExitRequested
+@inject JsonRecordStore RecordStore
+@inject DialogService Dialogs
+
+@implements IDisposable
+
+@* Главный игровой экран.
+   Потребляет события GameEngine и отрисовывает игровое поле.
+   Игровая логика полностью в ядре — здесь только UI-слой. *@
+
+<div class="game-container" tabindex="0"
+     @onkeydown="OnKeyDown"
+     @onmouseup="OnContainerMouseUp"
+     @onmouseleave="OnContainerMouseLeave">
+    @* Меню сверху (Группа 3) *@
+    <div class="menu-bar">
+        <div class="menu-item-wrapper">
+            <span class="menu-item" @onclick="ToggleGameMenu" @onmouseenter="@(() => OnMenuHover("game"))">Игра</span>
+            @if (_activeMenu == "game")
+            {
+                <div class="menu-dropdown">
+                    <span class="menu-item" @onclick="() => StartNewGame()">Новая игра</span>
+                    <div class="menu-separator"></div>
+                    <span class="menu-item" @onclick="() => StartGame(DifficultyPresets.Beginner)">Новичок</span>
+                    <span class="menu-item" @onclick="() => StartGame(DifficultyPresets.Intermediate)">Любитель</span>
+                    <span class="menu-item" @onclick="() => StartGame(DifficultyPresets.Expert)">Профессионал</span>
+                    <div class="menu-separator"></div>
+                    <span class="menu-item" @onclick="ExitApp">Выход</span>
+                </div>
+            }
+        </div>
+        <div class="menu-item-wrapper">
+            <span class="menu-item" @onclick="ToggleHelpMenu" @onmouseenter="@(() => OnMenuHover("help"))">Справка</span>
+            @if (_activeMenu == "help")
+            {
+                <div class="menu-dropdown">
+                    <span class="menu-item" @onclick="() => ShowRecords()">Лучшие результаты</span>
+                    <div class="menu-separator"></div>
+                    <span class="menu-item" @onclick="() => ShowAbout()">О программе</span>
+                </div>
+            }
+        </div>
+    </div>
+    @* Оверлей для закрытия меню кликом вне (Группа 8.2) *@
+    @if (_activeMenu != null)
+    {
+        <div class="menu-overlay" @onclick="() => _activeMenu = null"></div>
+    }
+    @* Верхняя панель: LED-счётчики мин и таймера + смайлик-кнопка *@
+    <div class="game-header">
+        <div class="led-counter mines-counter">
+            @* Счётчик оставшихся мин (LED-цифры timer_N.png).
+               Положительное: 3 цифры (D3). Отрицательное: минус + 2 цифры (D2). *@
+            @if (Engine.RemainingMines < 0)
+            {
+                <img src="@("images/minus.png")" alt="-" class="led-digit" />
+                var absDigits = Math.Abs(Engine.RemainingMines).ToString("D2");
+                <img src="@("images/timer_" + absDigits[0] + ".png")" alt="" class="led-digit" />
+                <img src="@("images/timer_" + absDigits[1] + ".png")" alt="" class="led-digit" />
+            }
+            else
+            {
+                var digits = Engine.RemainingMines.ToString("D3");
+                <img src="@("images/timer_" + digits[0] + ".png")" alt="" class="led-digit" />
+                <img src="@("images/timer_" + digits[1] + ".png")" alt="" class="led-digit" />
+                <img src="@("images/timer_" + digits[2] + ".png")" alt="" class="led-digit" />
+            }
+        </div>
+
+        <button class="smiley-button" @onclick="() => StartGame(Engine.Settings)"
+            @onmousedown="(e) => OnSmileyMouseDown(e)">
+            <img src="images/@_smileyImage" alt="Smiley" class="smiley-image" />
+        </button>
+
+        <div class="led-counter timer-counter">
+            @* Таймер: 3-значное число *@
+            @for (int i = 0; i < 3; i++)
+            {
+                var digits = GetTimerDigits(i);
+                <img src="@("images/timer_" + digits + ".png")" alt="@digits" class="led-digit" />
+            }
+        </div>
+    </div>
+
+    @* Игровое поле *@
+    <div class="game-board" style="--w: @(Engine.Width); --h: @(Engine.Height);">
+        @foreach (var info in _allCells)
+        {
+            @* Определяем фоновое изображение и оверлей для клетки *@
+            var (bg, overlay) = GetCellImages(info, _triggerCell, Engine.State == GameState.Won);
+            <div class="cell"
+                 @onclick="(e) => OnLeftClick(e, info.Position)"
+                 @oncontextmenu:preventDefault
+                 @oncontextmenu="@(e => OnRightClick(e, info.Position))"
+                 @onmousedown="(e) => OnCellMouseDown(e, info.Position)"
+                 @onmouseup="(e) => OnCellMouseUp(e, info.Position)">
+                <img src="@bg" alt="" />
+                @if (!string.IsNullOrEmpty(overlay))
+                {
+                    string imgClass = overlay.Contains("digit_") ? "digit-img" : "";
+                    <img src="@overlay" class="@imgClass" alt="" />
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // --- Состояние компонента ---
+
+    /// <summary>
+    /// Снимок всех клеток для отрисовки. Обновляется при событиях ядра.
+    /// </summary>
+    private CellInfo[] _allCells = [];
+
+    /// <summary>
+    /// Клетка-триггер (для отображения взорванной мины при проигрыше).
+    /// </summary>
+    private CellInfo? _triggerCell;
+
+    /// <summary>
+    /// Изображение смайлика: smiley.png / smiley_oh.png / smiley_win.png / smiley_lose.png
+    /// </summary>
+    private string _smileyImage = "smiley.png";
+
+    /// <summary>
+    /// Таймер для обновления Elapsed (100 мс).
+    /// </summary>
+    private System.Timers.Timer? _timer;
+
+    // --- Состояние подавления клика (для аккордов — Группа 4) ---
+
+    /// <summary>
+    /// true после аккорда — следующий @onclick подавляется.
+    /// </summary>
+    private bool _suppressNextClick;
+
+    /// <summary>
+    /// true после аккорда — следующий @oncontextmenu подавляется.
+    /// </summary>
+    private bool _suppressNextContextMenu;
+
+    // --- Состояние меню (Группа 3) ---
+
+    /// <summary>
+    /// Текущее открытое меню: null / "game" / "help".
+    /// </summary>
+    private string? _activeMenu;
+
+    // --- Состояние мыши (для аккордов — Группа 4) ---
+
+    /// <summary>
+    /// true если левая кнопка мыши зажата. Используется для аккордов (Группа 4).
+    /// </summary>
+    private bool _isLeftDown;
+
+    /// <summary>
+    /// true если правая кнопка мыши зажата. Используется для аккордов (Группа 4).
+    /// </summary>
+    private bool _isRightDown;
+
+    // --- Life Cycle ---
+
+    /// <summary>
+    /// Инициализация: подписка на события и запуск игры.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        // Подписываемся на события GameEngine.
+        Engine.CellChanged += OnCellChanged;
+        Engine.CellsRevealed += OnCellsRevealed;
+        Engine.BoardGenerated += OnBoardGenerated;
+        Engine.GameStateChanged += OnGameStateChanged;
+
+        // Запускаем первую игру с настройками Beginner.
+        StartGame(DifficultyPresets.Beginner);
+
+        // Запускаем таймер обновления отображения Elapsed (100 мс).
+        // GameEngine не потокобезопасен, поэтому все вызовы на UI-потоке.
+        _timer = new System.Timers.Timer(100);
+        _timer.AutoReset = true;
+        _timer.Elapsed += (_, _) => InvokeAsync(StateHasChanged);
+        _timer.Start();
+    }
+
+    /// <summary>
+    /// Очистка ресурсов: отписка от событий и уничтожение таймера.
+    /// </summary>
+    public void Dispose()
+    {
+        // Отписываемся от событий GameEngine.
+        Engine.CellChanged -= OnCellChanged;
+        Engine.CellsRevealed -= OnCellsRevealed;
+        Engine.BoardGenerated -= OnBoardGenerated;
+        Engine.GameStateChanged -= OnGameStateChanged;
+
+        // Уничтожаем таймер.
+        _timer?.Dispose();
+    }
+
+    // --- Обработчики событий ядра ---
+
+    /// <summary>
+    /// Обработчик CellChanged: одна клетка изменила состояние.
+    /// Перезапрашиваем полный снимок и перерисовываем.
+    /// </summary>
+    private void OnCellChanged(object? sender, CellChangedEventArgs e)
+    {
+        InvokeAsync(RefreshCells);
+    }
+
+    /// <summary>
+    /// Обработчик CellsRevealed: каскадное открытие или reveal-all.
+    /// Перезапрашиваем полный снимок и перерисовываем.
+    /// </summary>
+    private void OnCellsRevealed(object? sender, CellsRevealedEventArgs e)
+    {
+        InvokeAsync(RefreshCells);
+    }
+
+    /// <summary>
+    /// Обработчик BoardGenerated: мины расставлены, игра начата.
+    /// </summary>
+    private void OnBoardGenerated(object? sender, BoardGeneratedEventArgs e)
+    {
+        InvokeAsync(RefreshCells);
+    }
+
+    /// <summary>
+    /// Обработчик GameStateChanged: победа, поражение или смена состояния.
+    /// Устанавливает смайлик и обновляет снимок.
+    /// При победе — проверяет рекорд и показывает NamePrompt или Records.
+    /// </summary>
+    private void OnGameStateChanged(object? sender, GameStateChangedEventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            // TriggerCell — CellInfo клетки-триггера (взорвавшейся мины).
+            _triggerCell = e.TriggerCell;
+
+            // Устанавливаем смайлик в зависимости от состояния.
+            _smileyImage = e.NewState switch
+            {
+                GameState.Won => "smiley_win.png",
+                GameState.Lost => "smiley_lose.png",
+                _ => "smiley.png"
+            };
+
+            RefreshCells();
+
+            // Группа 5.4: при победе — проверяем рекорд.
+            if (e.NewState == GameState.Won)
+            {
+                OnGameWon();
+            }
+        });
+    }
+
+    /// <summary>
+    /// Обработка победы: проверка рекорда и показ диалогов (Группа 11.8).
+    /// Если сложность Custom — ничего не показываем.
+    /// Если рекорд — показываем NamePrompt, затем Records.
+    /// </summary>
+    private void OnGameWon()
+    {
+        // Для Custom-сложности — ничего не показываем.
+        if (Engine.Difficulty == DifficultyLevel.Custom)
+            return;
+
+        var elapsed = Engine.Elapsed.TotalSeconds;
+        var records = Engine.Records.ToList();
+
+        // Проверяем, попал ли рекорд в топ-5.
+        var hasRecord = records.Any(r => Math.Abs(r.TimeSeconds - elapsed) < 0.1);
+
+        if (hasRecord)
+        {
+            var name = Dialogs.ShowNamePrompt();
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                Engine.PlayerName = name;
+                if (RecordStore is JsonRecordStore json)
+                    json.RenameRecord(Engine.Difficulty, elapsed, name);
+            }
+        }
+
+        // В любом случае показываем таблицу рекордов.
+        Dialogs.ShowRecords();
+    }
+
+    // --- Публичные методы ---
+
+    /// <summary>
+    /// Запускает новую игру с заданными настройками.
+    /// Вызывается при инициализации и при выборе новой игры в меню.
+    /// </summary>
+    /// <param name="settings">Параметры поля (размер и количество мин).</param>
+    public void StartGame(GameSettings settings)
+    {
+        _activeMenu = null;
+        Engine.StartNewGame(settings);
+        _triggerCell = null;
+        _smileyImage = "smiley.png";
+        RefreshCells();
+
+        // Подгоняем окно под новое поле (9×9 / 16×16 / 30×16).
+        WindowSize.RequestSize(Engine.Width * 24, Engine.Height * 24);
+    }
+
+    // --- Обработчики ввода ---
+
+    /// <summary>
+    /// Нажатие кнопки мыши на клетке: трекинг состояния кнопок + аккорды + смайлик "oh".
+    /// Закрывает меню, сбрасывает suppress-флаги, обнаруживает аккорд.
+    /// </summary>
+    private void OnCellMouseDown(MouseEventArgs e, CellPoint point)
+    {
+        // Закрываем открытое меню при клике на поле (Группа 7.2).
+        _activeMenu = null;
+
+        // Сбрасываем suppress-флаги при каждом новом нажатии (Группа 7.4).
+        _suppressNextClick = false;
+        _suppressNextContextMenu = false;
+
+        if (Engine.State is GameState.Won or GameState.Lost)
+            return;
+
+        // Средняя кнопка (button == 1) — аккорд сразу (Группа 4).
+        if (e.Button == 1)
+        {
+            Engine.Chord(point);
+            return;
+        }
+
+        // Левая кнопка (button == 0).
+        if (e.Button == 0)
+        {
+            // Если правая кнопка уже зажата — аккорд (Группа 7.3).
+            if (_isRightDown)
+            {
+                _suppressNextClick = true;
+                _suppressNextContextMenu = true;
+                Engine.Chord(point);
+                return;
+            }
+
+            _isLeftDown = true;
+            _smileyImage = "smiley_oh.png";
+        }
+
+        // Правая кнопка (button == 2).
+        if (e.Button == 2)
+        {
+            // Если левая кнопка уже зажата — аккорд (Группа 7.3).
+            if (_isLeftDown)
+            {
+                _suppressNextClick = true;
+                _suppressNextContextMenu = true;
+                Engine.Chord(point);
+                return;
+            }
+
+            _isRightDown = true;
+        }
+    }
+
+    /// <summary>
+    /// Отпускание кнопки мыши в любом месте контейнера.
+    /// Сбрасывает смайлик и флаги кнопок.
+    /// </summary>
+    private void OnContainerMouseUp(MouseEventArgs e)
+    {
+        // Сброс флага кнопки.
+        if (e.Button == 0) _isLeftDown = false;
+        // Средняя кнопка (button == 1) обрабатывается в OnCellMouseDown.
+        if (e.Button == 2) _isRightDown = false;
+
+        // Сброс смайлика.
+        ResetSmileyForCurrentState();
+    }
+
+    /// <summary>
+    /// Отпускание кнопки мыши на клетке — логика в OnContainerMouseUp.
+    /// </summary>
+    private void OnCellMouseUp(MouseEventArgs e, CellPoint point)
+    {
+        // Логика сброса флагов — в OnContainerMouseUp.
+    }
+
+    /// <summary>
+    /// Нажатие на смайлик — состояние "oh" для ЛКМ. Закрывает меню.
+    /// </summary>
+    private void OnSmileyMouseDown(MouseEventArgs e)
+    {
+        // Закрываем открытое меню (Группа 7.2).
+        _activeMenu = null;
+
+        if (e.Button == 0 && Engine.State is not (GameState.Won or GameState.Lost))
+        {
+            _smileyImage = "smiley_oh.png";
+        }
+    }
+
+    /// <summary>
+    /// Уход мыши за пределы игры — сброс "oh" и suppress-флагов.
+    /// </summary>
+    private void OnContainerMouseLeave(MouseEventArgs e)
+    {
+        if (Engine.State is not (GameState.Won or GameState.Lost))
+        {
+            _smileyImage = "smiley.png";
+        }
+
+        // Сбрасываем флаги кнопок.
+        _isLeftDown = false;
+        _isRightDown = false;
+
+        // Сбрасываем suppress-флаги на всякий случай.
+        _suppressNextClick = false;
+        _suppressNextContextMenu = false;
+    }
+
+    /// <summary>
+    /// Клик ЛКМ по клетке: OpenCell (обычно) или CycleMark при Ctrl.
+    /// Подавляется после аккорда (флаг _suppressNextClick).
+    /// </summary>
+    private void OnLeftClick(MouseEventArgs e, CellPoint point)
+    {
+        if (Engine.State is GameState.Won or GameState.Lost)
+            return;
+
+        // Подавление клика после аккорда (Группа 7.3).
+        if (_suppressNextClick)
+        {
+            _suppressNextClick = false;
+            return;
+        }
+
+        // Ctrl+ЛКМ = CycleMark.
+        if (e.CtrlKey)
+        {
+            Engine.CycleMark(point);
+            return;
+        }
+
+        // Обычное открытие клетки.
+        Engine.OpenCell(point);
+    }
+
+    /// <summary>
+    /// ПКМ по клетке: CycleMark (Closed → Flagged → Question → Closed).
+    /// Подавляется после аккорда (флаг _suppressNextContextMenu).
+    /// </summary>
+    private void OnRightClick(MouseEventArgs e, CellPoint point)
+    {
+        if (Engine.State is GameState.Won or GameState.Lost)
+            return;
+
+        // Подавление клика после аккорда (Группа 7.3).
+        if (_suppressNextContextMenu)
+        {
+            _suppressNextContextMenu = false;
+            return;
+        }
+
+        Engine.CycleMark(point);
+    }
+
+    /// <summary>
+    /// Обработка клавиатуры. Esc закрывает открытое меню.
+    /// </summary>
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && _activeMenu != null)
+        {
+            _activeMenu = null;
+            StateHasChanged();
+        }
+    }
+
+    // --- Вспомогательные методы ---
+
+    /// <summary>
+    /// Возвращает смайлик в состояние, соответствующее текущему GameState.
+    /// </summary>
+    private void ResetSmileyForCurrentState()
+    {
+        _smileyImage = Engine.State switch
+        {
+            GameState.Won => "smiley_win.png",
+            GameState.Lost => "smiley_lose.png",
+            _ => "smiley.png"
+        };
+    }
+
+    /// <summary>
+    /// Обновляет снимок всех клеток из GameEngine.
+    /// </summary>
+    private void RefreshCells()
+    {
+        var cells = new CellInfo[Engine.Width * Engine.Height];
+        for (int y = 0; y < Engine.Height; y++)
+            for (int x = 0; x < Engine.Width; x++)
+                cells[y * Engine.Width + x] = Engine.GetCell(new CellPoint(x, y));
+        _allCells = cells;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Получает цифру для отображения таймера (3 разряда).
+    /// Ограничиваем значение 999, как в WinForms, чтобы таймер не обнулялся.
+    /// </summary>
+    private int GetTimerDigits(int index)
+    {
+        var totalSeconds = Math.Min((int)Engine.Elapsed.TotalSeconds, 999);
+        return (totalSeconds / (int)Math.Pow(10, 2 - index)) % 10;
+    }
+
+    // --- Методы меню (Группа 3) ---
+
+    /// <summary>
+    /// Переключает выпадающее меню «Игра».
+    /// </summary>
+    private void ToggleGameMenu()
+    {
+        _activeMenu = _activeMenu == "game" ? null : "game";
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Переключает выпадающее меню «Справка».
+    /// </summary>
+    private void ToggleHelpMenu()
+    {
+        _activeMenu = _activeMenu == "help" ? null : "help";
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Закрывает текущее меню.
+    /// </summary>
+    private void CloseMenu()
+    {
+        _activeMenu = null;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Переключение меню при наведении (Группа 9.2).
+    /// Если открытое меню отличается от нового — переключает.
+    /// </summary>
+    private void OnMenuHover(string newMenu)
+    {
+        // Если меню уже открыто и это другое меню — переключаем.
+        if (_activeMenu != null && _activeMenu != newMenu)
+        {
+            _activeMenu = newMenu;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Новая игра с текущими настройками.
+    /// </summary>
+    private void StartNewGame()
+    {
+        StartGame(Engine.Settings);
+        CloseMenu();
+    }
+
+    /// <summary>
+    /// Закрытие приложения из Blazor.
+    /// Вызываем делегат из WinForms-хоста, так как window.close() заблокирован в WebView2.
+    /// </summary>
+    private async Task ExitApp()
+    {
+        CloseMenu();
+        await ExitRequested.Invoke();
+    }
+
+    /// <summary>
+    /// Показать диалог рекордов (из меню «Лучшие результаты»).
+    /// </summary>
+    private void ShowRecords()
+    {
+        CloseMenu();
+        Dialogs.ShowRecords();
+    }
+
+    /// <summary>
+    /// Показать диалог «О программе» (из меню «О программе»).
+    /// </summary>
+    private void ShowAbout()
+    {
+        CloseMenu();
+        Dialogs.ShowAbout();
+    }
+
+    // --- Логика отрисовки клеток ---
+
+    /// <summary>
+    /// Определяет изображения для клетки по её состоянию.
+    /// Логика строго по §16.3 02-GAME-RULES.md.
+    /// </summary>
+    private (string BackgroundUrl, string? OverlayUrl) GetCellImages(CellInfo info, CellInfo? triggerCell, bool showFlagsOnWon)
+    {
+        // Если игра выиграна — на все мины ставим флаги поверх закрытых клеток.
+        if (showFlagsOnWon)
+        {
+            if (info.State == CellState.Closed || info.State == CellState.Flagged || info.State == CellState.Question)
+            {
+                return ("images/cell_closed.png", "images/cell_flag.png");
+            }
+        }
+
+        // Если игра проиграна — определяем especialные состояния.
+        if (Engine.State == GameState.Lost)
+        {
+            // Клетка-триггер (взорванная мина).
+            if (triggerCell is CellInfo tc && info.Position.X == tc.Position.X && info.Position.Y == tc.Position.Y)
+            {
+                return ("images/cell_exploded.png", null);
+            }
+
+            // Правильно помеченная мина (Flagged).
+            if (info.State == CellState.Flagged && info.Content == CellContent.Mine)
+            {
+                return ("images/cell_closed.png", "images/cell_flag.png");
+            }
+
+            // Неправильный флаг (WrongFlag).
+            if (info.State == CellState.WrongFlag)
+            {
+                return ("images/cell_wrong_flag.png", null);
+            }
+
+            // Остальные мины — пустые клетки с бомбой.
+            if (info.Content == CellContent.Mine && info.State == CellState.Opened)
+            {
+                return ("images/cell_empty.png", "images/bomb.png");
+            }
+        }
+
+        // Обычные состояния.
+        return info.State switch
+        {
+            CellState.Closed => ("images/cell_closed.png", null),
+            CellState.Flagged => ("images/cell_closed.png", "images/cell_flag.png"),
+            CellState.Question => ("images/cell_closed.png", "images/cell_question.png"),
+            CellState.Opened => GetOpenedCellImages(info),
+            CellState.WrongFlag => ("images/cell_wrong_flag.png", null),
+            _ => ("images/cell_closed.png", null)
+        };
+    }
+
+    /// <summary>
+    /// Определяет изображение для открытой клетки (цифра или пустая).
+    /// </summary>
+    private (string BackgroundUrl, string? OverlayUrl) GetOpenedCellImages(CellInfo info)
+    {
+        return info.Content switch
+        {
+            CellContent.Empty => ("images/cell_empty.png", null),
+            CellContent.Mine => ("images/cell_empty.png", "images/bomb.png"),
+            CellContent.Number => ("images/cell_empty.png", "images/digit_" + info.AdjacentMines + ".png"),
+            _ => ("images/cell_empty.png", null)
+        };
+    }
+}

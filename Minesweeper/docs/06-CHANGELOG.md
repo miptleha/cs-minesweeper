@@ -3,7 +3,9 @@
 Все заметные изменения в проекте. Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 проект придерживается [Semantic Versioning](https://semver.org/lang/ru/).
 
-## [Unreleased]
+## [0.6.0] - 2026-11-14
+
+Релиз 0.6.0 знаменует завершение Phase 9 — добавлен полноценный UI на Blazor Hybrid, а также выполнено множество исправлений визуального стиля и UX во всех версиях.
 
 ### Changed
 

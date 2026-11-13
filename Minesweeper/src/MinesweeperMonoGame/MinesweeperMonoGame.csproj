@@ -5,8 +5,7 @@
     <RollForward>Major</RollForward>
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
-  </PropertyGroup>
-  <PropertyGroup>
+
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>
@@ -20,8 +19,6 @@
     <PublishDir>..\..\dist\$(MSBuildProjectName)\</PublishDir>
   </PropertyGroup>
 
-  <!-- Удаляем createdump.exe из папки публикации: на запуск игры он не влияет,
-     а нужен только для диагностики (создания дампов памяти). -->
   <Target Name="RemoveCreatedumpFromPublish" AfterTargets="Publish">
     <ItemGroup>
       <_CreatedumpFile Include="$(PublishDir)createdump.exe" />

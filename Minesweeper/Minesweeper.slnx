@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/MinesweeperAvalonia/MinesweeperAvalonia.csproj" />
+    <Project Path="src/MinesweeperBlazorHybrid/MinesweeperBlazorHybrid.csproj" />
     <Project Path="src/MinesweeperCore/MinesweeperCore.csproj" />
     <Project Path="src/MinesweeperMonoGame/MinesweeperMonoGame.csproj" />
     <Project Path="src/MinesweeperWinForms/MinesweeperWinForms.csproj" />

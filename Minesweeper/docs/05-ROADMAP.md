@@ -14,6 +14,7 @@
 | 6 | **MonoGame UI.** Подключение ядра к MonoGame, работа с текстурами и спрайтами. | ✅ Готово (0.3.0) | `10-PHASE-6-MONOGAME.md` |
 | 7 | **WPF UI.** Кроссплатформенный XAML UI. | ✅ Готово (0.4.0) | `11-PHASE-7-WPF.md` |
 | 8 | **Avalonia UI.** Кроссплатформенный XAML UI. | ✅ Готово (0.5.0) | — |
+| 9 | **Blazor Hybrid.** UI на HTML/CSS + WebView2. | ✅ Готово (0.6.0) | — |
 
 ---
 

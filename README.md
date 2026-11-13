@@ -19,6 +19,7 @@ You don't need to install anything! Just download the release archive from the
 | `MinesweeperMonoGame-vX.X.X-win-x64.zip` | MonoGame (DesktopGL) UI, `.exe` + `Content/` folder | You want the sprite-based renderer, or you're on a machine where the MonoGame backend behaves better. |
 | `MinesweeperWpf-vX.X.X-win-x64.zip` | WPF (Windows Presentation Foundation) UI, single self-contained `.exe` | You prefer modern XAML/MVVM rendering and smooth native Windows controls. |
 | `MinesweeperAvalonia-vX.X.X-win-x64.zip` | Avalonia UI, single self-contained `.exe` | You want a cross-platform XAML UI with smooth rendering. |
+| `MinesweeperBlazorHybrid-vX.X.X-win-x64.zip` | Blazor Hybrid UI, `.exe` + `wwwroot/` folder | You want a web-based UI inside a native desktop window. |
 
 All archives are self-contained — the .NET Runtime is already bundled, nothing
 to install. Extract and run the `.exe` inside.
