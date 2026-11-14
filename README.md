@@ -1,7 +1,15 @@
-﻿Classic **Minesweeper** game with three equal UI implementations built on the same core: **WinForms**, **MonoGame**, **WPF**, **Avalonia**.
+﻿Classic **Minesweeper** — the game you remember from old Windows — re-implemented
+in modern .NET.
 
-All versions are **feature-equivalent**: same rules, same input layout, same
-records file, same look & feel. Pick whichever you prefer — there is no
+The idea behind the project is to take one shared core and try as many desktop
+UI frameworks for .NET as possible — the ones people use to build feature-rich
+desktop clients today. Each implementation is built on the same `MinesweeperCore`
+and lives in this repository; new ones are added release by release (see the
+[Releases page](https://github.com/miptleha/cs-minesweeper/releases) for what's
+out already).
+
+All versions are **functionally equivalent**: they share the same rules, input
+layout, records file, and look and feel. Pick whichever you prefer — there is no
 "main" or "secondary" version.
 
 Game logic (`MinesweeperCore`) is shared between all UIs and covered by unit tests.  
@@ -15,27 +23,30 @@ You don't need to install anything! Just download the release archive from the
 
 | Archive | What it is | When to pick it |
 |---|---|---|
-| `MinesweeperWinForms-vX.X.X-win-x64.zip` | Native Windows Forms UI, single self-contained `.exe` | You want the simplest launch: one file, no extra folders. |
-| `MinesweeperMonoGame-vX.X.X-win-x64.zip` | MonoGame (DesktopGL) UI, `.exe` + `Content/` folder | You want the sprite-based renderer, or you're on a machine where the MonoGame backend behaves better. |
-| `MinesweeperWpf-vX.X.X-win-x64.zip` | WPF (Windows Presentation Foundation) UI, single self-contained `.exe` | You prefer modern XAML/MVVM rendering and smooth native Windows controls. |
-| `MinesweeperAvalonia-vX.X.X-win-x64.zip` | Avalonia UI, single self-contained `.exe` | You want a cross-platform XAML UI with smooth rendering. |
-| `MinesweeperBlazorHybrid-vX.X.X-win-x64.zip` | Blazor Hybrid UI, `.exe` + `wwwroot/` folder | You want a web-based UI inside a native desktop window. |
+| `MinesweeperWinForms-vX.X.X-win-x64.zip` | Native Windows Forms UI; self-contained `.exe` | You want the simplest launch: one file, no extra folders. |
+| `MinesweeperMonoGame-vX.X.X-win-x64.zip` | MonoGame (DesktopGL) UI; `.exe` + `Content/` folder | You want the sprite-based renderer, or you're on a machine where the MonoGame backend works better. |
+| `MinesweeperWpf-vX.X.X-win-x64.zip` | WPF (Windows Presentation Foundation) UI; self-contained `.exe` | You prefer modern XAML/MVVM rendering and smooth native Windows controls. |
+| `MinesweeperAvalonia-vX.X.X-win-x64.zip` | Avalonia UI; self-contained `.exe` | You want a cross-platform XAML UI with smooth rendering. |
+| `MinesweeperBlazorHybrid-vX.X.X-win-x64.zip` | Blazor Hybrid UI; `.exe` + `wwwroot/` folder | You want a web-based UI inside a native desktop window. |
 
-All archives are self-contained — the .NET Runtime is already bundled, nothing
-to install. Extract and run the `.exe` inside.
+All release archives are built for **win-x64**. If you're on another platform,
+grab the sources and build for your own target — where the UI framework allows it.
+
+All archives are self-contained — the .NET Runtime is already bundled, so there
+is nothing to install. Extract and run the `.exe` inside.
 
 ## For Developers
 
-To build or develop the project, you need the **.NET SDK** installed.
+To build or develop the project, you need the **.NET SDK** installed.  
 *Note: The solution uses the `.slnx` format, which requires **.NET SDK 9.0.100 or newer**.*
 
 You can get the latest SDK from the official download page: [Download .NET](https://dotnet.microsoft.com/download).
 
-Debugging is available in Visual Studio 2022 (open `slnx` file) and VS Code (open `Minesweeper` folder).
+Debugging is supported in Visual Studio 2022 (open the `Minesweeper.slnx` file) and VS Code (open the `Minesweeper` folder).
 
 ### Commands
 
-All commands run from the `Minesweeper` folder — the one that contains `Minesweeper.slnx`.
+Run all commands from the `Minesweeper` folder — the one containing `Minesweeper.slnx`.
 
 ```bash
 # Build the whole solution (Debug)
