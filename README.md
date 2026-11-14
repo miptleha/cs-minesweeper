@@ -4,9 +4,10 @@ in modern .NET.
 The idea behind the project is to take one shared core and try as many desktop
 UI frameworks for .NET as possible — the ones people use to build feature-rich
 desktop clients today. Each implementation is built on the same `MinesweeperCore`
-and lives in this repository; new ones are added release by release (see the
-[Releases page](https://github.com/miptleha/cs-minesweeper/releases) for what's
-out already).
+and lives in this repository; new ones are added release by release — the list of
+upcoming UI frameworks and their priority is tracked in the
+[roadmap](Minesweeper/docs/05-ROADMAP.md), while what's already out can be found
+on the [Releases page](https://github.com/miptleha/cs-minesweeper/releases).
 
 All versions are **functionally equivalent**: they share the same rules, input
 layout, records file, and look and feel. Pick whichever you prefer — there is no
