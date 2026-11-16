@@ -17,7 +17,7 @@
 | 6 | **MonoGame UI.** Игровой фреймворк, спрайты и Content Pipeline. | 🟡 Средняя | `MonoGame.Framework.DesktopGL` | ✅ Готово (0.3.0) | `10-PHASE-6-MONOGAME.md` |
 | 7 | **WPF.** XAML UI с Data Binding и MVVM. | 🟢 Низкая | Встроено в .NET SDK | ✅ Готово (0.4.0) | `11-PHASE-7-WPF.md` |
 | 8 | **Avalonia UI.** Кроссплатформенный XAML UI. | 🟡 Средне-низкая | `Avalonia.Desktop` (~30–40 MB) | ✅ Готово (0.5.0) | — |
-| 9 | **Blazor Hybrid.** UI на HTML/CSS + WebView2. | 🟡 Средняя | `Microsoft.AspNetCore.Components.WebView.WindowsForms` (лёгкий; + WebView2 Runtime, обычно уже есть в Win11) | ✅ Готово (0.6.0) | — |
+| 9 | **Blazor Hybrid.** UI на HTML/CSS + WebView2. | 🟡 Средняя | `BlazorWebView` (лёгкий; + WebView2 Runtime, обычно уже есть в Win11) | ✅ Готово (0.6.0) | — |
 | 10 | **.NET MAUI.** Кроссплатформенный XAML-фреймворк Microsoft. | 🟡 Средняя | `Microsoft.Maui.Controls` + workload `maui` | ⬜ Запланировано | `12-PHASE-10-MAUI.md` (план) |
 | 11 | **Godot .NET.** Игровой движок с C#-поддержкой. | 🟠 Средне-высокая | Godot 4 (.NET) | ⚠️ Под вопросом (сборка через движок) | `13-PHASE-11-GODOT.md` (план) |
 | 12 | **WinUI 3.** Современный нативный UI Windows. | 🟡 Средняя | `Microsoft.WindowsAppSDK` | ⬜ Запланировано | `14-PHASE-12-WINUI3.md` (план) |
