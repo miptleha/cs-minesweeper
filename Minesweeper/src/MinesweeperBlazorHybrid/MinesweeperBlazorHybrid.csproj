@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
-        <TargetFramework>net8.0-windows</TargetFramework>
+        <TargetFramework>net10.0-windows</TargetFramework>
         <OutputType>WinExe</OutputType>
         <UseWindowsForms>true</UseWindowsForms>
 
@@ -15,8 +15,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebView.WindowsForms" Version="8.*" />
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.*" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebView.WindowsForms" Version="10.*" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.*" />
     </ItemGroup>
 
     <ItemGroup>
@@ -38,6 +38,13 @@
         <DebugSymbols>false</DebugSymbols>
         <PublishDir>..\..\dist\$(MSBuildProjectName)\</PublishDir>
     </PropertyGroup>
+
+    <Target Name="_removeUnusedWebView2" BeforeTargets="ResolveAssemblyReferences">
+        <ItemGroup>
+            <Reference Remove="@(Reference->WithMetadataValue('FileName', 'Microsoft.Web.WebView2.WinForms'))" Condition="'$(UseWindowsForms)' != 'true'" />
+            <Reference Remove="@(Reference->WithMetadataValue('FileName', 'Microsoft.Web.WebView2.Wpf'))" Condition="'$(UseWpf)' != 'true'" />
+        </ItemGroup>
+    </Target>
 
     <Target Name="RemoveCreatedumpFromPublish" AfterTargets="Publish">
         <ItemGroup>

@@ -6,6 +6,7 @@ using MinesweeperCore.Engine;
 using MinesweeperCore.Infrastructure;
 using MinesweeperCore.Domain;
 using MinesweeperBlazorHybrid.Services;
+using System.ComponentModel;
 
 namespace MinesweeperBlazorHybrid;
 
@@ -18,6 +19,7 @@ public partial class MainForm : Form
     /// <summary>
     /// Делегат для закрытия приложения из Blazor.
     /// </summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public Func<Task>? OnExitRequested { get; set; }
 
     /// <summary>

@@ -38,12 +38,11 @@ is nothing to install. Extract and run the `.exe` inside.
 
 ## For Developers
 
-To build or develop the project, you need the **.NET SDK** installed.  
-*Note: The solution uses the `.slnx` format, which requires **.NET SDK 9.0.100 or newer**.*
+To build or develop the project, you need the **.NET SDK 10.0.100 or newer** installed.  
 
 You can get the latest SDK from the official download page: [Download .NET](https://dotnet.microsoft.com/download).
 
-Debugging is supported in Visual Studio 2022 (open the `Minesweeper.slnx` file) and VS Code (open the `Minesweeper` folder).
+Debugging is supported in Visual Studio 2026 (open the `Minesweeper.slnx` file) and VS Code (open the `Minesweeper` folder).
 
 ### Commands
 

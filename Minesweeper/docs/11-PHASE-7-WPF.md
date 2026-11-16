@@ -509,7 +509,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
 ## 14. Что нужно доработать в репозитории до первой сборки
 
-1. **Создать `src/MinesweeperWpf/`** — проект WPF (`net8.0-windows`,
+1. **Создать `src/MinesweeperWpf/`** — проект WPF (`net10.0-windows`,
    `<UseWPF>true</UseWPF>`, `<OutputType>WinExe</OutputType>`).
 2. **Скопировать ассеты** `assets/*.png` + `assets/icon.ico` →
    `src/MinesweeperWpf/Resources/`. Имена **не менять**.

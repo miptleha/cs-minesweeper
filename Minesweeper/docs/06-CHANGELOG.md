@@ -3,6 +3,25 @@
 Все заметные изменения в проекте. Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 проект придерживается [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [Unreleased]
+
+### Changed
+
+- **Инфраструктура:** Миграция всего решения с .NET 8 на .NET 10: все проекты переведены с `net8.0`/`net8.0-windows` на `net10.0`/`net10.0-windows` (Core, WinForms, MonoGame, WPF, Avalonia, Blazor Hybrid, тесты). Сборка и запуск требуют .NET SDK 10 или новее.
+- **Тесты (MinesweeperCore.Tests):** Миграция на xunit v3 с платформой Microsoft.Testing.Platform (MTP). Удалены VSTest-зависимости: `Microsoft.NET.Test.Sdk`, `xunit.runner.visualstudio`, `coverlet.collector`. Единственная прямая зависимость — `xunit.v3`; тестовый проект стал исполняемым (`OutputType: Exe`). Команды `dotnet test` и `dotnet run --project tests/...` работают как раньше.
+- **README:** Переписано вступление — описана концепция проекта со ссылками на roadmap и Releases; обновлены требования окружения.
+- **Документация (05-ROADMAP.md):** Новые варианты UI, упорядочены по востребованности.
+
+### Added
+
+- **`Minesweeper/global.json`:** Файл конфигурации SDK: минимальная версия `10.0.100` с `rollForward: latestMajor`, включён раннер тестов Microsoft.Testing.Platform (`test.runner`) — обязательная настройка для MTP на SDK 10+.
+
+### Fixed
+
+- **Blazor Hybrid:** Устранены ошибки и ворнинги сборки (от миграции на .NET 10). Поведение в рантайме не изменилось.
+
+---
+
 ## [0.6.0] - 2026-11-14
 
 Релиз 0.6.0 знаменует завершение Phase 9 — добавлен полноценный UI на Blazor Hybrid, а также выполнено множество исправлений визуального стиля и UX во всех версиях.
