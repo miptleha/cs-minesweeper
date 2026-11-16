@@ -18,24 +18,24 @@
 | 7 | **WPF.** XAML UI с Data Binding и MVVM. | 🟢 Низкая | Встроено в .NET SDK | ✅ Готово (0.4.0) | `11-PHASE-7-WPF.md` |
 | 8 | **Avalonia UI.** Кроссплатформенный XAML UI. | 🟡 Средне-низкая | `Avalonia.Desktop` (~30–40 MB) | ✅ Готово (0.5.0) | — |
 | 9 | **Blazor Hybrid.** UI на HTML/CSS + WebView2. | 🟡 Средняя | `BlazorWebView` (лёгкий; + WebView2 Runtime, обычно уже есть в Win11) | ✅ Готово (0.6.0) | — |
-| 10 | **.NET MAUI.** Кроссплатформенный XAML-фреймворк Microsoft. | 🟡 Средняя | `Microsoft.Maui.Controls` + workload `maui` | ⬜ Запланировано | `12-PHASE-10-MAUI.md` (план) |
-| 11 | **Godot .NET.** Игровой движок с C#-поддержкой. | 🟠 Средне-высокая | Godot 4 (.NET) | ⚠️ Под вопросом (сборка через движок) | `13-PHASE-11-GODOT.md` (план) |
-| 12 | **WinUI 3.** Современный нативный UI Windows. | 🟡 Средняя | `Microsoft.WindowsAppSDK` | ⬜ Запланировано | `14-PHASE-12-WINUI3.md` (план) |
-| 13 | **Terminal.Gui.** Консольный (TUI) интерфейс. | 🟢 Низкая | `Terminal.Gui` | ⬜ Запланировано | `15-PHASE-13-TERMINAL-GUI.md` (план) |
-| 14 | **Uno Platform.** XAML WinUI-API на всех платформах. | 🟡 Средняя | `Uno.Sdk` | ⬜ Запланировано | `16-PHASE-14-UNO.md` (план) |
-| 15 | **Stride.** Чисто-C# игровой движок с редактором. | 🟠 Средне-высокая | `Stride.Engine` | ⚠️ Под вопросом (тяжёлый движок) | `17-PHASE-15-STRIDE.md` (план) |
-| 16 | **SkiaSharp + Silk.NET.** 2D-рисование + окно/ввод без движка. | 🟡 Средняя | `SkiaSharp`, `Silk.NET` | ⬜ Запланировано | `18-PHASE-16-SKIA-SILK.md` (план) |
-| 17 | **FNA + MGCB.** XNA4-совместимый рантайм. | 🟡 Средняя | `FNA`, `MGCB` | ⬜ Запланировано | `19-PHASE-17-FNA-MGCB.md` (план) |
-| 18 | **ImGui.NET.** Immediate-mode GUI (биндинги Dear ImGui). | 🟢 Низкая | `ImGui.NET` (+ окно/рендер) | ⬜ Запланировано | `20-PHASE-18-IMGUI.md` (план) |
-| 19 | **raylib-cs.** Биндинги raylib: окно + 2D в одном. | 🟢 Низкая | `Raylib-cs` | ⬜ Запланировано | `21-PHASE-19-RAYLIB.md` (план) |
-| 20 | **Photino.NET.** Лёгкая web-view оболочка. | 🟡 Средняя | `Photino.NET` | ⬜ Запланировано | `22-PHASE-20-PHOTINO.md` (план) |
-| 21 | **Myra.** UI-библиотека для MonoGame/FNA/Stride. | 🟢 Низкая | `Myra` | ⬜ Запланировано | `23-PHASE-21-MYRA.md` (план) |
-| 22 | **Microsoft.UI.Reactor.** React-подобные расширения WinUI. | 🔴 Высокая | `Microsoft.UI.Reactor` | 🧪 Эксперимент | `24-PHASE-22-UI-REACTOR.md` (план) |
-| 23 | **TerraFX.** Низкоуровневые мультимедиа-биндинги. | 🔴 Высокая | `TerraFX` | 🧪 Эксперимент | `25-PHASE-23-TERRAFX.md` (план) |
-| 24 | **UWP.** Устаревшая платформа Windows-приложений. | 🟠 Средне-высокая | Встроено в Windows SDK | ⚠️ Под вопросом (устарела) | `26-PHASE-24-UWP.md` (план) |
-| 25 | **Duxel** (Immediate-mode GUI). | 🔴 Высокая | `Duxel.App` (лёгкий, Native AOT) | 🧪 Эксперимент | `27-PHASE-25-DUXEL.md` (план) |
-| 26 | **Lumi** (HTML/CSS + SkiaSharp). | 🟠 Средне-высокая | `Lumi` (лёгкий, но экосистема молодая) | 🧪 Эксперимент | `28-PHASE-26-LUMI.md` (план) |
-| 27 | **MewUI** (NativeAOT-ориентированный). | 🔴 Высокая (эксперимент) | Лёгкий (3–4 MB) | 🧪 Эксперимент | `29-PHASE-27-MEWUI.md` (план) |
+| 10 | **.NET MAUI.** Кроссплатформенный XAML-фреймворк Microsoft. | 🟡 Средняя | `Microsoft.Maui.Controls` + workload `maui` | ⬜ Запланировано | — |
+| 11 | **Godot .NET.** Игровой движок с C#-поддержкой. | 🟠 Средне-высокая | Godot 4 (.NET) | ⚠️ Под вопросом (сборка через движок) | — |
+| 12 | **WinUI 3.** Современный нативный UI Windows. | 🟡 Средняя | `Microsoft.WindowsAppSDK` | ⬜ Запланировано | — |
+| 13 | **Terminal.Gui.** Консольный (TUI) интерфейс. | 🟢 Низкая | `Terminal.Gui` | ⬜ Запланировано | — |
+| 14 | **Uno Platform.** XAML WinUI-API на всех платформах. | 🟡 Средняя | `Uno.Sdk` | ⬜ Запланировано | — |
+| 15 | **Stride.** Чисто-C# игровой движок с редактором. | 🟠 Средне-высокая | `Stride.Engine` | ⚠️ Под вопросом (тяжёлый движок) | — |
+| 16 | **SkiaSharp + Silk.NET.** 2D-рисование + окно/ввод без движка. | 🟡 Средняя | `SkiaSharp`, `Silk.NET` | ⬜ Запланировано | — |
+| 17 | **FNA + MGCB.** XNA4-совместимый рантайм. | 🟡 Средняя | `FNA`, `MGCB` | ⬜ Запланировано | — |
+| 18 | **ImGui.NET.** Immediate-mode GUI (биндинги Dear ImGui). | 🟢 Низкая | `ImGui.NET` (+ окно/рендер) | ⬜ Запланировано | — |
+| 19 | **raylib-cs.** Биндинги raylib: окно + 2D в одном. | 🟢 Низкая | `Raylib-cs` | ⬜ Запланировано | — |
+| 20 | **Photino.NET.** Лёгкая web-view оболочка. | 🟡 Средняя | `Photino.NET` | ⬜ Запланировано | — |
+| 21 | **Myra.** UI-библиотека для MonoGame/FNA/Stride. | 🟢 Низкая | `Myra` | ⬜ Запланировано | — |
+| 22 | **Microsoft.UI.Reactor.** React-подобные расширения WinUI. | 🔴 Высокая | `Microsoft.UI.Reactor` | 🧪 Эксперимент | — |
+| 23 | **TerraFX.** Низкоуровневые мультимедиа-биндинги. | 🔴 Высокая | `TerraFX` | 🧪 Эксперимент | — |
+| 24 | **UWP.** Устаревшая платформа Windows-приложений. | 🟠 Средне-высокая | Встроено в Windows SDK | ⚠️ Под вопросом (устарела) | — |
+| 25 | **Duxel** (Immediate-mode GUI). | 🔴 Высокая | `Duxel.App` (лёгкий, Native AOT) | 🧪 Эксперимент | — |
+| 26 | **Lumi** (HTML/CSS + SkiaSharp). | 🟠 Средне-высокая | `Lumi` (лёгкий, но экосистема молодая) | 🧪 Эксперимент | — |
+| 27 | **MewUI** (NativeAOT-ориентированный). | 🔴 Высокая (эксперимент) | Лёгкий (3–4 MB) | 🧪 Эксперимент | — |
 
 **Легенда сложности (для UI-фаз):** 🟢 низкая — AI справится «с первого прохода»;
 🟡 средняя — потребуется 1–2 итерации; 🟠 средне-высокая — понадобится разбираться
@@ -62,10 +62,7 @@
    поставленный в WPF, виден в WinForms и наоборот.
 6. **Решение.** Каждый новый проект добавляется в `Minesweeper.slnx` под `/src/`
    с `ProjectReference` на `MinesweeperCore.csproj`.
-7. **Спецификация.** Каждая фаза получает `docs/NN-PHASE-M-TECH.md` по образцу
-   `09`/`10`; без спецификации реализацию не начинаем — иначе потеряется контракт
-   с ядром.
-8. **Release.** Self-contained, `win-x64`, как в существующих проектах — за
+7. **Release.** Self-contained, `win-x64`, как в существующих проектах — за
    исключением Godot и Stride, где итоговую сборку делает сам движок.
 
 ---
