@@ -2,7 +2,7 @@
 
 ## Проекты в решении
 
-- `src/MinesweeperCore` — библиотека с игровой логикой (.NET 8, без UI).
+- `src/MinesweeperCore` — библиотека с игровой логикой (.NET 10, без UI).
 - `src/MinesweeperWinForms` — приложение на WinForms. Подключает `MinesweeperCore`.
 - `src/MinesweeperMonoGame` — приложение на MonoGame. Подключает `MinesweeperCore`.
 - `tests/MinesweeperCore.Tests` — тесты для ядра (xUnit).
