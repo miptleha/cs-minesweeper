@@ -44,10 +44,11 @@
     <PublishDir>..\..\dist\MinesweeperAvalonia\</PublishDir>
   </PropertyGroup>
 
-  <Target Name="RemovePdbsFromPublish" AfterTargets="Publish">
+  <Target Name="ExcludeSkiaNativePdb" AfterTargets="ResolvePackageAssets" BeforeTargets="AssignTargetPaths">
     <ItemGroup>
-      <_PdbFiles Include="$(PublishDir)*.pdb" />
+      <NativeCopyLocalItems Remove="@(NativeCopyLocalItems)" Condition="'%(NativeCopyLocalItems.Filename)' == 'libHarfBuzzSharp' and '%(NativeCopyLocalItems.Extension)' == '.pdb'" />
+      <NativeCopyLocalItems Remove="@(NativeCopyLocalItems)" Condition="'%(NativeCopyLocalItems.Filename)' == 'libSkiaSharp' and '%(NativeCopyLocalItems.Extension)' == '.pdb'" />
     </ItemGroup>
-    <Delete Files="@(_PdbFiles)" />
   </Target>
+  
 </Project>

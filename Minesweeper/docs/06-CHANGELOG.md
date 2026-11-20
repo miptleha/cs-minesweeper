@@ -11,6 +11,8 @@
 - **Тесты (MinesweeperCore.Tests):** Миграция на xunit v3 с платформой Microsoft.Testing.Platform (MTP). Удалены VSTest-зависимости: `Microsoft.NET.Test.Sdk`, `xunit.runner.visualstudio`, `coverlet.collector`. Единственная прямая зависимость — `xunit.v3`; тестовый проект стал исполняемым (`OutputType: Exe`). Команды `dotnet test` и `dotnet run --project tests/...` работают как раньше.
 - **README:** Переписано вступление — описана концепция проекта со ссылками на roadmap и Releases; обновлены требования окружения.
 - **Документация (05-ROADMAP.md):** Новые варианты UI, упорядочены по востребованности.
+- **MinesweeperBlazorHybrid:** Публикуется в один файл с сжатием.
+- **Заглушки для всех UI:** Пустые проекты для всех новых вариантов UI.
 
 ### Added
 
