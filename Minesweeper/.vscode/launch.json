@@ -1,0 +1,117 @@
+{
+    // Отладка всех запускаемых проектов решения.
+    // type "dotnet" — C# Dev Kit (основная схема).
+    // Для WinUi3 и Maui используется type "coreclr", потому что Dev Kit не находит
+    // в этих проектах launchable target; для TerminalGui — потому что Dev Kit
+    // запускает консольный вывод не в терминал и опция console у типа "dotnet"
+    // не отрабатывает: Terminal.Gui остаётся невидимым.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Avalonia: Debug",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/MinesweeperAvalonia/MinesweeperAvalonia.csproj"
+        },
+        {
+            "name": "BlazorHybrid: Debug",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/MinesweeperBlazorHybrid/MinesweeperBlazorHybrid.csproj"
+        },
+        {
+            "name": "Duxel: Debug",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/MinesweeperDuxel/MinesweeperDuxel.csproj"
+        },
+        {
+            "name": "ImGui: Debug",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/MinesweeperImGui/MinesweeperImGui.csproj"
+        },
+        {
+            "name": "Lumi: Debug",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/MinesweeperLumi/MinesweeperLumi.csproj"
+        },
+        {
+            // MAUI: Dev Kit не находит launchable target (шаблон MAUI не помечается
+            // как обычный запускаемый проект), поэтому отладка через coreclr:
+            // сборка задачей build-maui, затем запуск exe напрямую.
+            "name": "Maui: Debug",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-maui",
+            "program": "${workspaceFolder}\\src\\MinesweeperMaui\\bin\\Debug\\net10.0-windows10.0.19041.0\\win-x64\\MinesweeperMaui.exe",
+            "cwd": "${workspaceFolder}\\src\\MinesweeperMaui"
+        },
+        {
+            "name": "MewUi: Debug",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/MinesweeperMewUi/MinesweeperMewUi.csproj"
+        },
+        {
+            "name": "MonoGame: Debug",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/MinesweeperMonoGame/MinesweeperMonoGame.csproj"
+        },
+        {
+            "name": "Raylib: Debug",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/MinesweeperRaylib/MinesweeperRaylib.csproj"
+        },
+        {
+            "name": "SkiaSharp: Debug",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/MinesweeperSkiaSharp/MinesweeperSkiaSharp.csproj"
+        },
+        {
+            // Консольное TUI-приложение. Отладчик запускает exe в отдельном окне
+            // консоли Windows — там Terminal.Gui гарантированно отрисуется.
+            // Брейкпоинт заморозит окно терминала до продолжения — это норма.
+            "name": "TerminalGui: Debug",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-terminalgui",
+            "program": "${workspaceFolder}\\src\\MinesweeperTerminalGui\\bin\\Debug\\net10.0\\MinesweeperTerminalGui.exe",
+            "cwd": "${workspaceFolder}\\src\\MinesweeperTerminalGui",
+            "console": "externalTerminal"
+        },
+        {
+            "name": "TerraFx: Debug",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/MinesweeperTerraFx/MinesweeperTerraFx.csproj"
+        },
+        {
+            "name": "WinForms: Debug",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/MinesweeperWinForms/MinesweeperWinForms.csproj"
+        },
+        {
+            // WinUI 3 unpackaged: запускается как обычный .NET-процесс.
+            // Отладка через coreclr с явным путём к exe.
+            // XAML Hot Reload в VS Code недоступен (только Visual Studio).
+            "name": "WinUi3: Debug",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-winui3",
+            "program": "${workspaceFolder}\\src\\MinesweeperWinUi3\\bin\\Debug\\net10.0-windows10.0.19041.0\\win-x64\\MinesweeperWinUi3.exe",
+            "cwd": "${workspaceFolder}\\src\\MinesweeperWinUi3"
+        },
+        {
+            "name": "Wpf: Debug",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/MinesweeperWpf/MinesweeperWpf.csproj"
+        }
+    ]
+}

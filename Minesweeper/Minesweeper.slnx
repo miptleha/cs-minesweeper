@@ -6,6 +6,7 @@
     <Project Path="src/MinesweeperDuxel/MinesweeperDuxel.csproj" />
     <Project Path="src/MinesweeperImGui/MinesweeperImGui.csproj" />
     <Project Path="src/MinesweeperLumi/MinesweeperLumi.csproj" />
+    <Project Path="src/MinesweeperMaui/MinesweeperMaui.csproj" />
     <Project Path="src/MinesweeperMewUi/MinesweeperMewUi.csproj" />
     <Project Path="src/MinesweeperMonoGame/MinesweeperMonoGame.csproj" />
     <Project Path="src/MinesweeperRaylib/MinesweeperRaylib.csproj" />
@@ -13,6 +14,9 @@
     <Project Path="src/MinesweeperTerminalGui/MinesweeperTerminalGui.csproj" />
     <Project Path="src/MinesweeperTerraFx/MinesweeperTerraFx.csproj" />
     <Project Path="src/MinesweeperWinForms/MinesweeperWinForms.csproj" />
+    <Project Path="src/MinesweeperWinUi3/MinesweeperWinUi3.csproj">
+      <Platform Project="x64" />
+    </Project>
     <Project Path="src/MinesweeperWpf/MinesweeperWpf.csproj" />
   </Folder>
   <Folder Name="/tests/">

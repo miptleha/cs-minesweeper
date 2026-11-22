@@ -1,0 +1,40 @@
+{
+    // Задачи сборки для проектов, отлаживаемых через coreclr
+    // (конфигурации Maui: Debug, WinUi3: Debug и TerminalGui: Debug в launch.json).
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build-maui",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}\\src\\MinesweeperMaui\\MinesweeperMaui.csproj",
+                "-c", "Debug"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build-winui3",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}\\src\\MinesweeperWinUi3\\MinesweeperWinUi3.csproj",
+                "-c", "Debug"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build-terminalgui",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}\\src\\MinesweeperTerminalGui\\MinesweeperTerminalGui.csproj",
+                "-c", "Debug"
+            ],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

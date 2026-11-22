@@ -41,7 +41,7 @@
 
     <DebugType>None</DebugType>
     <DebugSymbols>false</DebugSymbols>
-    <PublishDir>..\..\dist\MinesweeperAvalonia\</PublishDir>
+    <PublishDir>..\..\dist\$(MSBuildProjectName)\</PublishDir>
   </PropertyGroup>
 
   <Target Name="ExcludeSkiaNativePdb" AfterTargets="ResolvePackageAssets" BeforeTargets="AssignTargetPaths">

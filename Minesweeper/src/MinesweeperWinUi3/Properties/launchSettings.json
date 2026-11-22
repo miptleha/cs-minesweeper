@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "MinesweeperWinUi3 (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "MinesweeperWinUi3 (Unpackaged)": {
+      "commandName": "Project"
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    }
+  }
+}
