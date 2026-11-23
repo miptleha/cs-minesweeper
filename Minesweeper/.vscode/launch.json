@@ -112,6 +112,17 @@
             "type": "dotnet",
             "request": "launch",
             "projectPath": "${workspaceFolder}/src/MinesweeperWpf/MinesweeperWpf.csproj"
+        },
+        {
+            // Uno Platform (Skia desktop). Отладка через coreclr с явным путём к exe:
+            // OutputType Exe — при запуске GUI откроется окном, вывод пойдёт в Debug Console.
+            // RID win-x64 задан безусловно в csproj, поэтому путь стабилен.
+            "name": "Uno: Debug",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-uno",
+            "program": "${workspaceFolder}\\src\\MinesweeperUno\\bin\\Debug\\net10.0-desktop\\win-x64\\MinesweeperUno.exe",
+            "cwd": "${workspaceFolder}\\src\\MinesweeperUno"
         }
     ]
 }

@@ -13,6 +13,7 @@
     <Project Path="src/MinesweeperSkiaSharp/MinesweeperSkiaSharp.csproj" />
     <Project Path="src/MinesweeperTerminalGui/MinesweeperTerminalGui.csproj" />
     <Project Path="src/MinesweeperTerraFx/MinesweeperTerraFx.csproj" />
+    <Project Path="src/MinesweeperUno/MinesweeperUno.csproj" />
     <Project Path="src/MinesweeperWinForms/MinesweeperWinForms.csproj" />
     <Project Path="src/MinesweeperWinUi3/MinesweeperWinUi3.csproj">
       <Platform Project="x64" />

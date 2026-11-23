@@ -35,6 +35,17 @@
                 "-c", "Debug"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build-uno",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}\\src\\MinesweeperUno\\MinesweeperUno.csproj",
+                "-c", "Debug"
+            ],
+            "problemMatcher": "$msCompile"
         }
     ]
 }
