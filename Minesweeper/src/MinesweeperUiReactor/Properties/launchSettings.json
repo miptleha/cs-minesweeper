@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "MinesweeperUiReactor (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "MinesweeperUiReactor (Unpackaged)": {
+      "commandName": "Project"
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    }
+  }
+}

@@ -29,6 +29,7 @@
   <PropertyGroup>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishProfile>win-x64</PublishProfile>
+    <IsPublishable Condition="'$(Uno)' != 'true'">false</IsPublishable>
   </PropertyGroup>
 
   <Target Name="ExcludeSkiaNativePdb" AfterTargets="ResolvePackageAssets" BeforeTargets="AssignTargetPaths">

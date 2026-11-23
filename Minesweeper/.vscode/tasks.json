@@ -26,6 +26,17 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "build-uireactor",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}\\src\\MinesweeperUiReactor\\MinesweeperUiReactor.csproj",
+                "-c", "Debug"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "build-terminalgui",
             "command": "dotnet",
             "type": "process",
