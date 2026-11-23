@@ -14,8 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Duxel.App" Version="0.2.12-preview" />
-    <PackageReference Include="Duxel.Windows.App" Version="0.2.12-preview" />
+    <PackageReference Include="Duxel.App" Version="0.3.0-preview" />
+    <PackageReference Include="Duxel.Windows.App" Version="0.3.0-preview" />
   </ItemGroup>
 
   <ItemGroup>

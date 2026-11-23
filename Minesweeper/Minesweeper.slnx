@@ -1,10 +1,12 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/MinesweeperAtomUi/MinesweeperAtomUi.csproj" />
     <Project Path="src/MinesweeperAvalonia/MinesweeperAvalonia.csproj" />
     <Project Path="src/MinesweeperBlazorHybrid/MinesweeperBlazorHybrid.csproj" />
     <Project Path="src/MinesweeperCore/MinesweeperCore.csproj" />
     <Project Path="src/MinesweeperDuxel/MinesweeperDuxel.csproj" />
     <Project Path="src/MinesweeperImGui/MinesweeperImGui.csproj" />
+    <Project Path="src/MinesweeperJaliumUi/MinesweeperJaliumUi.csproj" />
     <Project Path="src/MinesweeperLumi/MinesweeperLumi.csproj" />
     <Project Path="src/MinesweeperMaui/MinesweeperMaui.csproj" />
     <Project Path="src/MinesweeperMewUi/MinesweeperMewUi.csproj" />
