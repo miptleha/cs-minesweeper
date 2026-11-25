@@ -10,15 +10,6 @@
     <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <SelfContained>true</SelfContained>
-    <DebugType>None</DebugType>
-    <DebugSymbols>false</DebugSymbols>
-    <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
-    <PublishDir>..\..\dist\$(MSBuildProjectName)\</PublishDir>
-  </PropertyGroup>
-
   <Target Name="RemoveCreatedumpFromPublish" AfterTargets="Publish">
     <ItemGroup>
       <_CreatedumpFile Include="$(PublishDir)createdump.exe" />
@@ -39,10 +30,20 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*" />
-    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.6.1" />
+    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.6.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MinesweeperCore\MinesweeperCore.csproj" />
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
+    <PublishDir>..\..\dist\$(MSBuildProjectName)\</PublishDir>
+  </PropertyGroup>
+
 </Project>

@@ -5,12 +5,14 @@
     <Project Path="src/MinesweeperBlazorHybrid/MinesweeperBlazorHybrid.csproj" />
     <Project Path="src/MinesweeperCore/MinesweeperCore.csproj" />
     <Project Path="src/MinesweeperDuxel/MinesweeperDuxel.csproj" />
+    <Project Path="src/MinesweeperFna/MinesweeperFna.csproj" />
     <Project Path="src/MinesweeperImGui/MinesweeperImGui.csproj" />
     <Project Path="src/MinesweeperJaliumUi/MinesweeperJaliumUi.csproj" />
     <Project Path="src/MinesweeperLumi/MinesweeperLumi.csproj" />
     <Project Path="src/MinesweeperMaui/MinesweeperMaui.csproj" />
     <Project Path="src/MinesweeperMewUi/MinesweeperMewUi.csproj" />
     <Project Path="src/MinesweeperMonoGame/MinesweeperMonoGame.csproj" />
+    <Project Path="src/MinesweeperMyra/MinesweeperMyra.csproj" />
     <Project Path="src/MinesweeperRaylib/MinesweeperRaylib.csproj" />
     <Project Path="src/MinesweeperSkiaSharp/MinesweeperSkiaSharp.csproj" />
     <Project Path="src/MinesweeperTerminalGui/MinesweeperTerminalGui.csproj" />

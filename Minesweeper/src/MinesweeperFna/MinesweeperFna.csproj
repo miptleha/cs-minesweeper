@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>Icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="MinesweeperFna.bmp" CopyToOutputDirectory="PreserveNewest" />
+    <None Remove="Icon.ico" />
+  </ItemGroup>
+
+  <Target Name="RemoveCreatedumpFromPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_CreatedumpFile Include="$(PublishDir)createdump.exe" />
+    </ItemGroup>
+    <Delete Files="@(_CreatedumpFile)" />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="FNA.NET" Version="2.2.11.2602" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\minesweepercore\MinesweeperCore.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
+    <PublishDir>..\..\dist\$(MSBuildProjectName)\</PublishDir>
+  </PropertyGroup>
+
+</Project>
