@@ -17,6 +17,9 @@
     <!-- Package Description -->
     <Description>MinesweeperUno powered by Uno Platform.</Description>
 
+    <UnoIconBackgroundFile>Assets\Icons\icon.png</UnoIconBackgroundFile>
+    <UnoIconForegroundFile>Assets\Icons\icon.png</UnoIconForegroundFile>
+
     <!--
       UnoFeatures are used to quickly add and manage features enabled for your app.
       https://aka.platform.uno/singleproject-features
@@ -25,6 +28,14 @@
       Skia;
     </UnoFeatures>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\*.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\MinesweeperCore\MinesweeperCore.csproj" />
+  </ItemGroup>
 
   <PropertyGroup>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

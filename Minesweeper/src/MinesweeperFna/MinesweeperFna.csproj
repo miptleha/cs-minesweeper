@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\*.png" LogicalName="Resources.%(Filename)%(Extension)" />
     <None Update="MinesweeperFna.bmp" CopyToOutputDirectory="PreserveNewest" />
     <None Remove="Icon.ico" />
   </ItemGroup>

@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Resources\*.png" />
+    <EmbeddedResource Include="Resources\*.png" LogicalName="Resources.%(Filename)%(Extension)" />
     <Resource Include="Resources\icon.ico" />
   </ItemGroup>
 

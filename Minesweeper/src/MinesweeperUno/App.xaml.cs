@@ -20,6 +20,7 @@ public partial class App : Application
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         MainWindow = new Window();
+        MainWindow.Title = "Сапёр";
 #if DEBUG
         MainWindow.UseStudio();
 #endif

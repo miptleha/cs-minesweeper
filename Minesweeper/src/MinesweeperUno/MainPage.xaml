@@ -5,13 +5,7 @@
       Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
   <ScrollViewer IsTabStop="True">
     <Grid>
-      <StackPanel
-        HorizontalAlignment="Center"
-        VerticalAlignment="Center">
-        <TextBlock AutomationProperties.AutomationId="HelloTextBlock"
-          Text="Hello Uno Platform!"
-          HorizontalAlignment="Center" />
-      </StackPanel>
+      <Image Source="ms-appx:///Assets/smiley.png" Width="32" Height="32" />
     </Grid>
   </ScrollViewer>
 </Page>

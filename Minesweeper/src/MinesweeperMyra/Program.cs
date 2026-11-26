@@ -1,2 +1,2 @@
-﻿using var game = new MinesweeperMyra.Game1();
+﻿using var game = new MinesweeperMyra.MinesweeperGame();
 game.Run();

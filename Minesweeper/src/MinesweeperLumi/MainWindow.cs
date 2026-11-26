@@ -7,7 +7,7 @@ public class MainWindow : Window
 {
     public MainWindow()
     {
-        Title = "MinesweeperLumi";
+        Title = "Сапёр";
         Width = 960;
         Height = 680;
 

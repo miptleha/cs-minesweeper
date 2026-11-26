@@ -7,15 +7,14 @@ namespace MinesweeperFna;
 /// <summary>
 /// Каркас игры «Сапёр» на FNA. Пока что — пустое окно с фирменным фоном.
 /// </summary>
-public class Game1 : Game
+public class MinesweeperGame : Game
 {
     private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch? _spriteBatch;
 
-    public Game1()
+    public MinesweeperGame()
     {
         _graphics = new GraphicsDeviceManager(this);
-        Content.RootDirectory = "Content";
         IsMouseVisible = true;
     }
 

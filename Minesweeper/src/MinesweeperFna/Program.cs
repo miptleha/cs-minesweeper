@@ -9,7 +9,7 @@ internal static class Program
     /// </summary>
     internal static void Main()
     {
-        using var game = new Game1();
+        using var game = new MinesweeperGame();
         game.Run();
     }
 }

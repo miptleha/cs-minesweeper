@@ -1,15 +1,18 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Myra;
+using Myra.Graphics2D.UI;
 
 namespace MinesweeperMyra;
 
-public class Game1 : Game
+public class MinesweeperGame : Game
 {
-    private GraphicsDeviceManager _graphics;
-    private SpriteBatch _spriteBatch;
+    private readonly GraphicsDeviceManager _graphics;
+    private Desktop? _desktop;
+    private Texture2D? _smiley;
 
-    public Game1()
+    public MinesweeperGame()
     {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
@@ -18,24 +21,26 @@ public class Game1 : Game
 
     protected override void Initialize()
     {
-        // TODO: Add your initialization logic here
+        Window.Title = "Сапёр";
+
+        // Myra инициализируется поверх MonoGame
+        MyraEnvironment.Game = this;
+        _desktop = new Desktop();
 
         base.Initialize();
     }
 
     protected override void LoadContent()
     {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-        // TODO: use this.Content to load your game content here
+        // DoD: минимум один ассет реально загружается
+        _smiley = Content.Load<Texture2D>("smiley");
+        base.LoadContent();
     }
 
     protected override void Update(GameTime gameTime)
     {
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+        if (Keyboard.GetState().IsKeyDown(Keys.Escape))
             Exit();
-
-        // TODO: Add your update logic here
 
         base.Update(gameTime);
     }
@@ -43,8 +48,7 @@ public class Game1 : Game
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(Color.CornflowerBlue);
-
-        // TODO: Add your drawing code here
+        _desktop?.Render();
 
         base.Draw(gameTime);
     }
