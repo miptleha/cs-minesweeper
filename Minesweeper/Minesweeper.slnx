@@ -8,18 +8,24 @@
     <Project Path="src/MinesweeperCoreWindows/MinesweeperCoreWindows.csproj" />
     <Project Path="src/MinesweeperDuxel/MinesweeperDuxel.csproj" />
     <Project Path="src/MinesweeperEto/MinesweeperEto.csproj" />
+    <Project Path="src/MinesweeperExtendedToolkit/MinesweeperExtendedToolkit.csproj" />
     <Project Path="src/MinesweeperFna/MinesweeperFna.csproj" />
+    <Project Path="src/MinesweeperHandyControl/MinesweeperHandyControl.csproj" />
     <Project Path="src/MinesweeperImGui/MinesweeperImGui.csproj" />
     <Project Path="src/MinesweeperJaliumUi/MinesweeperJaliumUi.csproj" />
     <Project Path="src/MinesweeperKrypton/MinesweeperKrypton.csproj" />
     <Project Path="src/MinesweeperLumi/MinesweeperLumi.csproj" />
     <Project Path="src/MinesweeperLvglSharp/MinesweeperLvglSharp.csproj" />
+    <Project Path="src/MinesweeperMahApps/MinesweeperMahApps.csproj" />
+    <Project Path="src/MinesweeperMaterialDesign/MinesweeperMaterialDesign.csproj" />
     <Project Path="src/MinesweeperMaui/MinesweeperMaui.csproj" />
     <Project Path="src/MinesweeperMewUi/MinesweeperMewUi.csproj" />
+    <Project Path="src/MinesweeperModernWpf/MinesweeperModernWpf.csproj" />
     <Project Path="src/MinesweeperMonoGame/MinesweeperMonoGame.csproj" />
     <Project Path="src/MinesweeperMyra/MinesweeperMyra.csproj" />
     <Project Path="src/MinesweeperNativeForms/MinesweeperNativeForms.csproj" />
     <Project Path="src/MinesweeperNevron/MinesweeperNevron.csproj" />
+    <Project Path="src/MinesweeperPanuon/MinesweeperPanuon.csproj" />
     <Project Path="src/MinesweeperPhotino/MinesweeperPhotino.csproj" />
     <Project Path="src/MinesweeperRaylib/MinesweeperRaylib.csproj" />
     <Project Path="src/MinesweeperReaLTaiizor/MinesweeperReaLTaiizor.csproj" />
@@ -35,6 +41,7 @@
       <Platform Project="x64" />
     </Project>
     <Project Path="src/MinesweeperWpf/MinesweeperWpf.csproj" />
+    <Project Path="src/MinesweeperWpfUi/MinesweeperWpfUi.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MinesweeperCore.Tests/MinesweeperCore.Tests.csproj" />
