@@ -1,3 +1,6 @@
+using Nevron.Nov.UI;
+using Nevron.Nov.Windows.Forms;
+
 namespace MinesweeperNevron
 {
     /// <summary>
@@ -11,6 +14,12 @@ namespace MinesweeperNevron
         {
             Text = "Сапёр";
             ClientSize = new Size(800, 600);
+
+            // NOV-виджет внутри WinForms-хоста (официальная интеграция NOV).
+            var novLabel = new NLabel("Hello from NOV");
+            novLabel.TextAlignment = Nevron.Nov.ENContentAlignment.MiddleCenter;
+            var host = new NNovWidgetHost<NLabel>(novLabel) { Dock = DockStyle.Fill };
+            Controls.Add(host);
 
             try
             {

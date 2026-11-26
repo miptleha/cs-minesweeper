@@ -1,3 +1,7 @@
+using Nevron.Nov;
+using Nevron.Nov.Grid;
+using Nevron.Nov.Windows.Forms;
+
 namespace MinesweeperNevron
 {
     internal static class Program
@@ -5,13 +9,15 @@ namespace MinesweeperNevron
         [STAThread]
         private static void Main(string[] args)
         {
-            // Инициализация WinForms (visual styles, DPI-масштабирование).
             ApplicationConfiguration.Initialize();
+
+            // Инициализация NOV: установка модуля Grid перед запуском форм.
+            NNovApplicationInstaller.Install(new NModule[] { NGridModule.Instance });
 
             // Проверка загрузки embedded-ассета (DoD болванки).
             try
             {
-                var _ = Assets.GetPng("smiley");
+                _ = Assets.GetPng("smiley");
             }
             catch
             {

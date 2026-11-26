@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Windows;
+using Panuon.WPF.UI;
 
 namespace MinesweeperPanuon
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow : WindowX
     {
         public MainWindow()
         {
