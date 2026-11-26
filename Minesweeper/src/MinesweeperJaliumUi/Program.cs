@@ -1,5 +1,6 @@
 ﻿using Jalium.UI;
 using Jalium.UI.Controls;
+using MinesweeperJaliumUi;
 
 var builder = AppBuilder.CreateBuilder(args);
 builder.ConfigureApplication(app =>
@@ -11,5 +12,10 @@ builder.ConfigureApplication(app =>
         Height = 640
     };
 });
+
+// DoD: минимум один ассет реально загружается
+var _ = Assets.GetPng("smiley");
+
+
 using var jalium = builder.Build();
 return jalium.Run();

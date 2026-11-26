@@ -26,9 +26,15 @@ public class MinesweeperGame : Game
         base.Initialize();
     }
 
+    private Texture2D? _smiley;
+
     protected override void LoadContent()
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
+
+        // DoD: минимум один ассет реально загружается
+        using var png = new MemoryStream(Assets.GetPng("smiley"));
+        _smiley = Texture2D.FromStream(GraphicsDevice, png);
     }
 
     protected override void Update(GameTime gameTime)
