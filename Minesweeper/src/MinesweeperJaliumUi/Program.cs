@@ -14,7 +14,7 @@ builder.ConfigureApplication(app =>
 });
 
 // DoD: минимум один ассет реально загружается
-var _ = Assets.GetPng("smiley");
+_ = Assets.GetPng("smiley");
 
 
 using var jalium = builder.Build();

@@ -11,7 +11,7 @@ namespace MinesweeperSiticone
             // Проверка загрузки embedded-ассета (DoD болванки).
             try
             {
-                var _ = Assets.GetPng("smiley");
+                _ = Assets.GetPng("smiley");
             }
             catch
             {
