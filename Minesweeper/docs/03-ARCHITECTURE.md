@@ -3,9 +3,8 @@
 ## Проекты в решении
 
 - `src/MinesweeperCore` — библиотека с игровой логикой (.NET 10, без UI).
-- `src/MinesweeperWinForms` — приложение на WinForms. Подключает `MinesweeperCore`.
-- `src/MinesweeperMonoGame` — приложение на MonoGame. Подключает `MinesweeperCore`.
 - `tests/MinesweeperCore.Tests` — тесты для ядра (xUnit).
+- остальные папки в `src/` — UI-проекты. Подключают `MinesweeperCore`.
 
 Ядро ничего не знает про UI. UI зависит от ядра, а не наоборот.
 
@@ -87,43 +86,16 @@
 - UI работает только с `CellInfo`, `GameEngine` и аргументами событий. Внутренние модели (`Cell`, `Board`) UI не трогает.
 - UI не ссылается на WinForms / MonoGame из ядра — наоборот, не бывает.
 
-### Структура `MinesweeperWinForms`
+### Структура форм (ориентировочная, делать в зависимости от фреймвока)
 
-- `MainForm.cs` — главное окно, отрисовка поля, обработка ввода.
-- `RecordsForm.cs` — таблица рекордов (3 вкладки по уровням сложности).
-- `AboutForm.cs` — окно «О программе».
-- `NamePromptForm.cs` — запрос имени при победе.
-- `JsonRecordStore.cs` — сохранение рекордов в `%LocalAppData%`.
+- `MainForm` — главное окно, отрисовка поля, обработка ввода.
+- `RecordsForm` — таблица рекордов (3 вкладки по уровням сложности).
+- `AboutForm` — окно «О программе».
+- `NamePromptForm` — запрос имени при победе.
 
 ## Правила для ядра
 
-- Ядро не ссылается на WinForms, MonoGame, WPF и любой другой UI.
+- Ядро не ссылается на любой UI-проект.
 - Всё, что зависит от среды (случайность, файлы, время), — через интерфейсы из `Abstractions/`. Это нужно, чтобы тесты работали без реального `Random` и без файловой системы.
 - Публичное API ядра: `GameEngine`, `GameSettings`, `DifficultyPresets`, `DifficultyLevel`, `CellPoint`, `CellInfo`, `CellState`, `CellContent`, `GameState`, `RecordEntry`, `IRandomProvider`, `IRecordStore`, `ITimeProvider`, `SystemRandomProvider`, `SystemTimeProvider`, `InMemoryRecordStore`, все `*EventArgs`, `CellChange`.
 - `Board`, `Cell`, `MinePlacement`, `RevealService`, `WinCondition` — детали реализации.
-
-## Производительность
-
-Скорость клика не зависит от размера поля. Горячие пути:
-
-| Метод | Сложность | Частота |
-|---|---|---|
-| `GameEngine.OpenCell` (не каскад) | O(1) | каждый клик |
-| `GameEngine.CycleMark` | O(1) | каждый правый клик |
-| `GameEngine.RemainingMines` | O(1) | каждое чтение |
-| `GameEngine.GetCell` | O(1) | в `OnPaint` для каждой клетки |
-| `WinCondition.IsWon` | O(1) | после каждого открытия |
-| `RevealService.CascadeReveal` | O(открываемых) | один раз на каскад |
-| `MinePlacement.PlaceMines` | O(mineCount × 8) | **один раз за партию** |
-| `RevealService.RevealAll` | O(TotalCells) | **один раз за партию** (`Lost`) |
-| `Board.Reset` / `new Board(...)` | O(TotalCells) | **один раз за партию** (`StartNewGame`) |
-| `GameEngine.Chord` | O(8) + каскад. Открывает соседей цифровой клетки при совпадении флагов. Эмитит батч `CellsRevealed`. |
-
-Ключевые решения:
-
-- `Cell` — `struct`, а не `class`. `new Cell[w, h]` — одна аллокация + memset.
-- `Board.PlaceMines` обходит только мины (O(mineCount × 8)), а не всё поле.
-- `MinePlacement` — partial Fisher-Yates: только `mineCount` swaps.
-- `CascadeReveal` — `bool[] visited` вместо `HashSet<CellPoint>`, инлайн-обход соседей без `IEnumerator` allocs.
-- `AdjacentMines` считается один раз в `PlaceMines` и не пересчитывается.
-- `WinCondition.IsWon` — O(1) через `OpenedSafeCells`. Флаги в условии победы не участвуют.
