@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>MinesweeperUiReactor</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon Condition="Exists('Assets\AppIcon.ico')">Assets\AppIcon.ico</ApplicationIcon>
-    <Platforms>x86;x64;ARM64</Platforms>
+    <Platforms>x64;ARM64</Platforms>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</RuntimeIdentifier>
     <PublishProfile Condition="Exists('Properties\PublishProfiles\$(RuntimeIdentifier).pubxml')">$(RuntimeIdentifier).pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\AppIcon.ico" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
@@ -71,5 +71,21 @@
   <ItemGroup>
     <ProjectReference Include="..\MinesweeperCore\MinesweeperCore.csproj" />
   </ItemGroup>
+
+  <Target Name="RemoveFoldersWithMuiFiles" AfterTargets="Build;Publish">
+    <!-- Выбираем папку: PublishDir при публикации, OutDir при сборке -->
+    <PropertyGroup>
+      <_MuiCleanupDir Condition="'$(_IsPublishing)' == 'true'">$(PublishDir)</_MuiCleanupDir>
+      <_MuiCleanupDir Condition="'$(_IsPublishing)' != 'true'">$(OutDir)</_MuiCleanupDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <RemovingFiles Include="$(_MuiCleanupDir)*\*.mui" 
+                    Exclude="$(_MuiCleanupDir)en-us\*.mui" />
+      <RemovingFolders Include="@(RemovingFiles->'%(RootDir)%(Directory)')" />
+    </ItemGroup>
+    
+    <RemoveDir Directories="@(RemovingFolders)" />
+  </Target>
 
 </Project>
