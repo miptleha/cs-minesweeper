@@ -18,6 +18,7 @@ public enum Screen
 {
     Main,
     Records,
+    Controls,
     About,
     NamePrompt
 }
@@ -46,7 +47,10 @@ public class MinesweeperGame : Game
     private MouseState _prevMouse;
     private KeyboardState _prevKeyboard;
     private bool _suppressNextMouseUp;
-    private CellPoint? _chordCell;
+
+    // Долгое нажатие (~0,5 с) — метка, как по ПКМ (тачпад/тачскрин).
+    private CellPoint? _longPressCell;
+    private int _longPressStartMs;
     private bool _wasInsideBoard;
     private string _smiley = "smiley";
     private CellPoint? _triggerCell;
@@ -85,6 +89,8 @@ public class MinesweeperGame : Game
     };
     private readonly string[] _helpMenuItems = {
         "Лучшие результаты",
+        "-",
+        "Управление",
         "-",
         "О программе"
     };
@@ -156,7 +162,7 @@ public class MinesweeperGame : Game
     private void StartGame(GameSettings settings)
     {
         _triggerCell = null;
-        _chordCell = null;
+        _longPressCell = null;
         _suppressNextMouseUp = false;
         _wasInsideBoard = false;
         _screen = Screen.Main;
@@ -266,38 +272,43 @@ public class MinesweeperGame : Game
         var m = Mouse.GetState();
         var pos = m.Position;
 
-        if (m.MiddleButton == ButtonState.Pressed && _prevMouse.MiddleButton == ButtonState.Released)
+        // Долгое нажатие ЛКМ (~0,5 с) — метка, как по ПКМ (тачпад/тачскрин).
+        bool leftJustDown = m.LeftButton == ButtonState.Pressed && _prevMouse.LeftButton == ButtonState.Released;
+        if (leftJustDown)
         {
-            if (_screen == Screen.Main && _openMenu == MenuKind.None)
-            {
-                var p = ToCellPoint(pos);
-                if (p.HasValue)
-                {
-                    _engine.Chord(p.Value);
-                    UpdateMineCounter();
-                }
-            }
+            _longPressCell = ToCellPoint(pos);
+            _longPressStartMs = Environment.TickCount;
         }
 
-        bool bothPressed = m.LeftButton == ButtonState.Pressed && m.RightButton == ButtonState.Pressed;
-        bool wasBoth = _prevMouse.LeftButton == ButtonState.Pressed && _prevMouse.RightButton == ButtonState.Pressed;
-        if (bothPressed && !wasBoth && _screen == Screen.Main && _openMenu == MenuKind.None)
-            _chordCell = ToCellPoint(pos);
-
-        bool leftJustDown = m.LeftButton == ButtonState.Pressed && _prevMouse.LeftButton == ButtonState.Released;
-        // ИСПРАВЛЕНИЕ: проверяем, что клик именно по полю, как в WinForms
-        if (leftJustDown && _chordCell is null && BoardRect.Contains(pos)
+        if (m.LeftButton == ButtonState.Pressed
+            && _longPressCell is CellPoint lp
+            && Environment.TickCount - _longPressStartMs >= 500
+            && _screen == Screen.Main && _openMenu == MenuKind.None
+            && (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted))
+        {
+            // Long-press сработал — подавляем последующий OnLeftUp.
+            _longPressCell = null;
+            _suppressNextMouseUp = true;
+            ResetSmileyForCurrentState();
+            _engine.CycleMark(lp);
+            UpdateMineCounter();
+        }
+        else if (leftJustDown && BoardRect.Contains(pos)
             && (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted)
             && _screen == Screen.Main && _openMenu == MenuKind.None)
         {
-            SetSmiley("smiley_oh");
+            // Смайлик «о» — только для ЛКМ по закрытой клетке
+            // (по открытой цифре ЛКМ — аккорд, мигать не должен).
+            var p = ToCellPoint(pos);
+            if (p.HasValue && _engine.GetCell(p.Value).State != CellState.Opened)
+                SetSmiley("smiley_oh");
         }
 
         bool insideBoard = BoardRect.Contains(pos);
         if (insideBoard && !_wasInsideBoard)
         {
             if (m.LeftButton == ButtonState.Released && m.RightButton == ButtonState.Released)
-                _chordCell = null;
+                _longPressCell = null;
             if (m.LeftButton == ButtonState.Pressed
                 && (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted)
                 && _screen == Screen.Main && _openMenu == MenuKind.None)
@@ -426,7 +437,7 @@ public class MinesweeperGame : Game
             return;
         }
 
-        if (_suppressNextMouseUp && _chordCell is null)
+        if (_suppressNextMouseUp && _longPressCell is null)
         {
             _suppressNextMouseUp = false;
             ResetSmileyForCurrentState();
@@ -439,24 +450,21 @@ public class MinesweeperGame : Game
             return;
         }
 
-        if (_chordCell is CellPoint chord)
-        {
-            _chordCell = null;
-            _suppressNextMouseUp = true;
-            _engine.Chord(chord);
-            UpdateMineCounter();
-            ResetSmileyForCurrentState();
-            return;
-        }
-
         ResetSmileyForCurrentState();
+        _longPressCell = null;
 
         var point = ToCellPoint(pos);
         if (!point.HasValue) return;
 
         if (IsControlDown())
         {
+            // Ctrl+ЛКМ — то же, что ПКМ (метка).
             _engine.CycleMark(point.Value);
+        }
+        else if (_engine.GetCell(point.Value).State == CellState.Opened)
+        {
+            // ЛКМ по открытой цифре — аккорд.
+            _engine.Chord(point.Value);
         }
         else
         {
@@ -511,7 +519,8 @@ public class MinesweeperGame : Game
                 switch (index)
                 {
                     case 0: _screen = Screen.Records; _recordsTab = 0; break;
-                    case 2: _screen = Screen.About; break;
+                    case 2: _screen = Screen.Controls; break;
+                    case 4: _screen = Screen.About; break;
                 }
                 break;
         }
@@ -576,18 +585,10 @@ public class MinesweeperGame : Game
             return;
         }
 
-        if (_chordCell is CellPoint chord)
-        {
-            _chordCell = null;
-            _suppressNextMouseUp = true;
-            _engine.Chord(chord);
-            UpdateMineCounter();
-            return;
-        }
-
         var point = ToCellPoint(pos);
         if (!point.HasValue) return;
 
+        // ПКМ — метка (флаг → вопрос → пусто). По открытой клетке ядро игнорирует.
         _engine.CycleMark(point.Value);
         UpdateMineCounter();
     }
@@ -834,6 +835,7 @@ public class MinesweeperGame : Game
         switch (_screen)
         {
             case Screen.Records: DrawRecordsScreen(); break;
+            case Screen.Controls: DrawControlsScreen(); break;
             case Screen.About: DrawAboutScreen(); break;
             case Screen.NamePrompt: DrawNamePromptScreen(gameTime); break;
         }
@@ -932,6 +934,31 @@ public class MinesweeperGame : Game
         _githubLinkRect = new Rectangle(window.X + (int)(20 * _scaleFactor), window.Y + (int)(115 * _scaleFactor), (int)linkSize.X, (int)linkSize.Y);
         _spriteBatch.DrawString(_font, linkText, new Vector2(_githubLinkRect.X, _githubLinkRect.Y), Color.Blue, 0, Vector2.Zero, FontScale, SpriteEffects.None, 0);
         DrawRect(Color.Blue, new Rectangle(_githubLinkRect.X, _githubLinkRect.Bottom - 1, _githubLinkRect.Width, 1));
+
+        DrawDialogButton(window.X + window.Width / 2 - (int)(40 * _scaleFactor), window.Y + window.Height - (int)(40 * _scaleFactor), "OK");
+    }
+
+    private void DrawControlsScreen()
+    {
+        int centerX = GraphicsDevice.Viewport.Width / 2;
+        int w = Math.Min((int)(420 * _scaleFactor), GraphicsDevice.Viewport.Width - (int)(20 * _scaleFactor));
+        int h = Math.Min((int)(180 * _scaleFactor), GraphicsDevice.Viewport.Height - (int)(20 * _scaleFactor));
+        Rectangle window = new Rectangle(centerX - w / 2, (int)(50 * _scaleFactor), w, h);
+        DrawWindow(window);
+
+        string[] lines =
+        {
+            "ЛКМ - открыть клетку;",
+            "повторный ЛКМ по открытой цифре -",
+            "аккорд (открыть соседей).",
+            "ПКМ - метка: флаг -> вопрос -> пусто.",
+            "Ctrl+ЛКМ или долгое нажатие (~0,5 с) -",
+            "то же, что ПКМ.",
+        };
+        for (int i = 0; i < lines.Length; i++)
+        {
+            _spriteBatch.DrawString(_font, lines[i], new Vector2(window.X + (int)(20 * _scaleFactor), window.Y + (int)(20 * _scaleFactor) + i * (int)(20 * _scaleFactor)), Color.Black, 0f, Vector2.Zero, FontScale, SpriteEffects.None, 0f);
+        }
 
         DrawDialogButton(window.X + window.Width / 2 - (int)(40 * _scaleFactor), window.Y + window.Height - (int)(40 * _scaleFactor), "OK");
     }

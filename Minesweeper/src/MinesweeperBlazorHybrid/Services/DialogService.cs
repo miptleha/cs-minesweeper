@@ -40,6 +40,18 @@ public class DialogService
     }
 
     /// <summary>
+    /// Показывает окно «Управление».
+    /// </summary>
+    public void ShowControls()
+    {
+        const string text =
+            "ЛКМ — открыть клетку; повторный ЛКМ по открытой цифре — аккорд (открыть соседей)." + "\n" +
+            "ПКМ — метка: флаг → вопрос → пусто." + "\n" +
+            "Ctrl+ЛКМ или долгое нажатие (~0,5 с) — то же, что ПКМ.";
+        MessageBox.Show(Form.ActiveForm, text, "Управление", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    /// <summary>
     /// Показывает окно ввода имени. Возвращает имя или null при отмене.
     /// </summary>
     public string? ShowNamePrompt()

@@ -33,6 +33,8 @@
             <MenuItem Header="Справка">
                 <MenuItem Header="Лучшие результаты" Click="OnRecordsClick" />
                 <Separator />
+                <MenuItem Header="Управление" Click="OnControlsClick" />
+                <Separator />
                 <MenuItem Header="О программе" Click="OnAboutClick" />
             </MenuItem>
         </Menu>

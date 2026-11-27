@@ -29,6 +29,8 @@
             <MenuItem Header="_Справка">
                 <MenuItem Header="_Лучшие результаты" Click="OnRecordsClick"/>
                 <Separator/>
+                <MenuItem Header="_Управление" Click="OnControlsClick"/>
+                <Separator/>
                 <MenuItem Header="_О программе" Click="OnAboutClick"/>
             </MenuItem>
         </Menu>
@@ -82,7 +84,6 @@
                       VerticalAlignment="Top"
                       PointerPressed="OnBoardPointerPressed"
                       PointerReleased="OnBoardPointerReleased"
-                      PointerMoved="OnBoardPointerMoved"
                       PointerEntered="OnBoardPointerEntered"
                       PointerExited="OnBoardPointerExited">
             <ItemsControl.ItemsPanel>

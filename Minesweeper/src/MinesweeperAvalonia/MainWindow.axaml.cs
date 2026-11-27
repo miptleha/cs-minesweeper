@@ -23,8 +23,14 @@ public partial class MainWindow : Window
 
     // --- Поля для отслеживания ввода ---
     private bool _isLeftDown = false;
-    private CellPoint? _chordCandidate = null;
     private bool _suppressNextMouseUp = false;
+
+    // Долгое нажатие (~0,5 с) — метка, как по ПКМ (тачпад/тачскрин).
+    private readonly Avalonia.Threading.DispatcherTimer _longPressTimer = new()
+    {
+        Interval = TimeSpan.FromMilliseconds(500),
+    };
+    private CellPoint? _longPressCell = null;
 
     public MainWindow()
     {
@@ -37,6 +43,9 @@ public partial class MainWindow : Window
 
         // Подписка на GameStateChanged для показа диалогов при победе.
         _vm.Engine.GameStateChanged += OnGameStateChangedDialog;
+
+        // Долгое нажатие (~0,5 с) — метка, как по ПКМ (тачпад/тачскрин).
+        _longPressTimer.Tick += OnLongPressTick;
     }
 
     // --- Вспомогательные методы (Группа 3) ---
@@ -106,6 +115,12 @@ public partial class MainWindow : Window
         about.ShowDialog(this);
     }
 
+    private void OnControlsClick(object? sender, RoutedEventArgs e)
+    {
+        var controls = new ControlsWindow();
+        controls.ShowDialog(this);
+    }
+
     /// <summary>
     /// Обработка победы: запрос имени (если новый рекорд) + показ рекордов.
     /// </summary>
@@ -149,95 +164,68 @@ public partial class MainWindow : Window
     private void OnBoardPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         var props = e.GetCurrentPoint(BoardControl).Properties;
-
-        // 1. Средняя кнопка — аккорд сразу.
-        if (props.PointerUpdateKind == PointerUpdateKind.MiddleButtonPressed)
-        {
-            var mp = ToCellPoint(e.GetPosition(BoardControl));
-            if (mp.HasValue) _vm.Chord(mp.Value);
+        if (props.PointerUpdateKind != PointerUpdateKind.LeftButtonPressed)
             return;
-        }
 
-        _suppressNextMouseUp = false;
+        _isLeftDown = true;
+        _longPressCell = ToCellPoint(e.GetPosition(BoardControl));
+        StartLongPressTimer();
 
-        // 2. Обновляем флаги нажатия
-        if (props.PointerUpdateKind == PointerUpdateKind.LeftButtonPressed) _isLeftDown = true;
-
-        // 3. Если обе кнопки зажаты — это аккорд.
-        if (props.IsLeftButtonPressed && props.IsRightButtonPressed)
+        // Смайлик «О» — только для ЛКМ по закрытой клетке
+        // (по открытой цифре ЛКМ — аккорд, мигать не должен).
+        if (_vm.State == GameState.InProgress || _vm.State == GameState.NotStarted)
         {
-            var point = ToCellPoint(e.GetPosition(BoardControl));
-            if (point.HasValue) _chordCandidate = point;
-            return;
-        }
-
-        // 4. Обычный клик — показываем смайлик «О»
-        if (_isLeftDown && _chordCandidate is null
-            && (_vm.State == GameState.InProgress || _vm.State == GameState.NotStarted))
-        {
-            _vm.SetSmiley("smiley_oh");
-        }
-    }
-
-    // ВАЖНО: Новый обработчик для отслеживания второй кнопки
-    private void OnBoardPointerMoved(object? sender, PointerEventArgs e)
-    {
-        var props = e.GetCurrentPoint(BoardControl).Properties;
-
-        // Если ЛКМ зажата, и мы нажимаем ПКМ, PointerPressed может не сработать из-за захвата.
-        // Ловим это здесь.
-        if (props.IsLeftButtonPressed && props.IsRightButtonPressed && !_chordCandidate.HasValue)
-        {
-            var point = ToCellPoint(e.GetPosition(BoardControl));
-            if (point.HasValue) _chordCandidate = point;
+            var p = ToCellPoint(e.GetPosition(BoardControl));
+            if (p.HasValue && _vm.Engine.GetCell(p.Value).State != CellState.Opened)
+                _vm.SetSmiley("smiley_oh");
         }
     }
 
     private void OnBoardPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         var props = e.GetCurrentPoint(BoardControl).Properties;
+        var kind = props.PointerUpdateKind;
 
         // 1. Снимаем флаги
-        if (props.PointerUpdateKind == PointerUpdateKind.LeftButtonReleased) _isLeftDown = false;
+        if (kind == PointerUpdateKind.LeftButtonReleased)
+        {
+            _isLeftDown = false;
+            StopLongPressTimer();
+        }
 
-        // 2. Если это второе отпускание после аккорда — игнорируем
+        // 2. Если сработал long-press (метка уже поставлена) — игнорируем.
         if (_suppressNextMouseUp)
         {
             _suppressNextMouseUp = false;
-            _chordCandidate = null;
             ResetSmileyForCurrentState();
             return;
         }
 
-        // 3. Если был аккорд — выполняем его
-        if (_chordCandidate.HasValue)
-        {
-            _vm.Chord(_chordCandidate.Value);
-            _chordCandidate = null;
-            _suppressNextMouseUp = true;
-            ResetSmileyForCurrentState();
-            return;
-        }
-
-        // 4. Обычное отпускание
+        // 3. Обычное отпускание
         ResetSmileyForCurrentState();
 
         var point = ToCellPoint(e.GetPosition(BoardControl));
         if (!point.HasValue) return;
 
-        if (props.PointerUpdateKind == PointerUpdateKind.RightButtonReleased)
+        if (kind == PointerUpdateKind.RightButtonReleased)
         {
+            // ПКМ — метка (флаг → вопрос → пусто). По открытой клетке ядро игнорирует.
             _vm.CycleMark(point.Value);
         }
-        else if (props.PointerUpdateKind == PointerUpdateKind.LeftButtonReleased)
+        else if (kind == PointerUpdateKind.LeftButtonReleased)
         {
             if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
             {
+                // Ctrl+ЛКМ — то же, что ПКМ (метка).
                 _vm.CycleMark(point.Value);
             }
             else
             {
-                _vm.OpenCell(point.Value);
+                // ЛКМ по открытой цифре — аккорд, иначе — открытие клетки.
+                if (_vm.Engine.GetCell(point.Value).State == CellState.Opened)
+                    _vm.Chord(point.Value);
+                else
+                    _vm.OpenCell(point.Value);
             }
         }
     }
@@ -247,7 +235,7 @@ public partial class MainWindow : Window
         var props = e.GetCurrentPoint(BoardControl).Properties;
         if (!props.IsLeftButtonPressed && !props.IsRightButtonPressed)
         {
-            _chordCandidate = null;
+            _longPressCell = null;
             _isLeftDown = false;
         }
     }
@@ -257,6 +245,37 @@ public partial class MainWindow : Window
         if (_vm.State == GameState.InProgress || _vm.State == GameState.NotStarted)
         {
             _vm.SetSmiley("smiley");
+        }
+    }
+
+    // --- Долгое нажатие (~0,5 с) — метка, как по ПКМ (тачпад/тачскрин) ---
+
+    private void StartLongPressTimer()
+    {
+        if (!_longPressTimer.IsEnabled)
+            _longPressTimer.Start();
+    }
+
+    private void StopLongPressTimer()
+    {
+        _longPressTimer.Stop();
+    }
+
+    private void OnLongPressTick(object? sender, EventArgs e)
+    {
+        _longPressTimer.Stop();
+
+        if (_longPressCell is not CellPoint cell)
+            return;
+
+        if (_isLeftDown
+            && (_vm.State == GameState.InProgress || _vm.State == GameState.NotStarted))
+        {
+            // Долгое нажатие сработало — подавляем последующий PointerReleased,
+            // чтобы клетка не открылась.
+            _suppressNextMouseUp = true;
+            ResetSmileyForCurrentState();
+            _vm.CycleMark(cell);
         }
     }
 

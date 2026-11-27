@@ -1,0 +1,30 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="MinesweeperAvalonia.Windows.ControlsWindow"
+        Title="Управление"
+        Width="420"
+        SizeToContent="Height"
+        CanResize="False"
+        CanMinimize="False"
+        CanMaximize="False"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Icon="{x:Null}">
+    <Grid RowDefinitions="*,Auto" Margin="20">
+        <StackPanel Grid.Row="0" Orientation="Vertical" Spacing="8">
+            <TextBlock TextWrapping="Wrap"
+                       Text="ЛКМ — открыть клетку; повторный ЛКМ по открытой цифре — аккорд (открыть соседей)."/>
+            <TextBlock TextWrapping="Wrap"
+                       Text="ПКМ — метка: флаг → вопрос → пусто."/>
+            <TextBlock TextWrapping="Wrap"
+                       Text="Ctrl+ЛКМ или долгое нажатие (~0,5 с) — то же, что ПКМ."/>
+        </StackPanel>
+
+        <Button Grid.Row="1" Content="OK" HorizontalAlignment="Center"
+                IsDefault="True" IsCancel="True" Width="80" Click="OnOkClick"
+                Margin="0,16,0,0"/>
+    </Grid>
+</Window>

@@ -23,10 +23,17 @@ public class MainForm : Form
     private static readonly Dictionary<string, Image> _imageCache = new();
     private static readonly Dictionary<string, Image> _smileyCache = new();
 
-    // Поля для обработки мыши и аккордов
-    private MouseButtons _downButtons = MouseButtons.None;
-    private CellPoint? _chordCandidate = null;
+    // Поля для обработки мыши и долгого нажатия
     private bool _suppressNextMouseUp = false;
+
+    // Долгое нажатие (~0,5 с) — метка, как по ПКМ (тачпад/тачскрин).
+    private readonly System.Windows.Forms.Timer _longPressTimer = new() { Interval = 500 };
+    private CellPoint? _longPressCell = null;
+
+    private const string ControlsHelpText =
+        "ЛКМ — открыть клетку; повторный ЛКМ по открытой цифре — аккорд (открыть соседей)." + "\n" +
+        "ПКМ — метка: флаг → вопрос → пусто." + "\n" +
+        "Ctrl+ЛКМ или долгое нажатие (~0,5 с) — то же, что ПКМ.";
 
     private float ScaleFactor => DeviceDpi / 96f;
     private int GetCellSize() => (int)(24 * ScaleFactor);
@@ -95,6 +102,10 @@ public class MainForm : Form
         _boardPanel.MouseEnter += BoardPanel_MouseEnter;
         _boardPanel.MouseLeave += BoardPanel_MouseLeave;
 
+        // Долгое нажатие (~0,5 с) — метка, как по ПКМ (тачпад/тачскрин).
+        _longPressTimer.Tick += LongPressTimer_Tick;
+        FormClosed += (s, e) => _longPressTimer.Dispose();
+
         var menu = new MenuStrip();
         var gameMenu = new ToolStripMenuItem("Игра");
         gameMenu.DropDownItems.Add("Новая игра", null, (s, e) => StartGame(_engine.Settings));
@@ -107,6 +118,9 @@ public class MainForm : Form
 
         var helpMenu = new ToolStripMenuItem("Справка");
         helpMenu.DropDownItems.Add("Лучшие результаты", null, (s, e) => new RecordsForm(_recordStore).ShowDialog(this));
+        helpMenu.DropDownItems.Add(new ToolStripSeparator());
+        helpMenu.DropDownItems.Add("Управление", null, (s, e) =>
+            MessageBox.Show(this, ControlsHelpText, "Управление", MessageBoxButtons.OK, MessageBoxIcon.Information));
         helpMenu.DropDownItems.Add(new ToolStripSeparator());
         helpMenu.DropDownItems.Add("О программе", null, (s, e) => new AboutForm().ShowDialog(this));
 
@@ -161,8 +175,8 @@ public class MainForm : Form
     private void StartGame(GameSettings settings)
     {
         _triggerCell = null;
-        _downButtons = MouseButtons.None;
-        _chordCandidate = null;
+        StopLongPressTimer();
+        _longPressCell = null;
         _suppressNextMouseUp = false;
 
         _engine.StartNewGame(settings);
@@ -233,60 +247,32 @@ public class MainForm : Form
 
     private void BoardPanel_MouseDown(object? sender, MouseEventArgs e)
     {
-        // Средняя кнопка — аккорд сразу (3-finger tap на тачпаде).
-        if (e.Button == MouseButtons.Middle)
+        // ЛКМ: запоминаем клетку и запускаем таймер долгого нажатия.
+        if (e.Button == MouseButtons.Left)
         {
-            var midPoint = ToCellPoint(e.X, e.Y);
-            if (midPoint.HasValue)
-            {
-                _engine.Chord(midPoint.Value);
-                UpdateMineCounter();
-            }
-            return;
+            _longPressCell = ToCellPoint(e.X, e.Y);
+            StartLongPressTimer();
         }
 
-        if (e.Button == MouseButtons.Left || e.Button == MouseButtons.Right)
-            _downButtons |= e.Button;
-
-        // Обе кнопки зажаты — потенциальный аккорд ЛКМ+ПКМ. 
-        // Запоминаем клетку, где произошло второе нажатие.
-        if ((_downButtons & MouseButtons.Left) != 0 && (_downButtons & MouseButtons.Right) != 0)
-        {
-            _chordCandidate = ToCellPoint(e.X, e.Y);
-        }
-
-        // Смайлик «о» — только для ЛКМ и только если это не начало аккорда.
+        // Смайлик «о» — только для ЛКМ по закрытой клетке
+        // (по открытой цифре ЛКМ — аккорд, мигать не должен).
         if (e.Button == MouseButtons.Left
-            && _chordCandidate is null
             && (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted))
         {
-            SetSmiley("smiley_oh.png");
+            var p = ToCellPoint(e.X, e.Y);
+            if (p.HasValue && _engine.GetCell(p.Value).State != CellState.Opened)
+                SetSmiley("smiley_oh.png");
         }
     }
 
     private void BoardPanel_MouseUp(object? sender, MouseEventArgs e)
     {
-        if (e.Button == MouseButtons.Left || e.Button == MouseButtons.Right)
-            _downButtons &= ~e.Button;
+        StopLongPressTimer();
 
-        // Второй MouseUp после сработавшего аккорда — гасим.
-        // НО только если это не начало нового аккорда: если пользователь снова
-        // нажал ЛКМ при зажатой ПКМ (_chordCandidate задан), это новый аккорд,
-        // и его нужно обработать, а не подавлять.
-        if (_suppressNextMouseUp && _chordCandidate is null)
+        // Если сработал long-press (метка уже поставлена) — подавляем действие.
+        if (_suppressNextMouseUp)
         {
             _suppressNextMouseUp = false;
-            ResetSmileyForCurrentState();
-            return;
-        }
-
-        // Аккорд по ЛКМ+ПКМ: срабатывает при отпускании первой из двух зажатых.
-        if (_chordCandidate is CellPoint chordCell)
-        {
-            _chordCandidate = null;
-            _suppressNextMouseUp = true;
-            _engine.Chord(chordCell);
-            UpdateMineCounter();
             ResetSmileyForCurrentState();
             return;
         }
@@ -301,8 +287,13 @@ public class MainForm : Form
 
             if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
             {
-                // Ctrl+ЛКМ = аналог ПКМ (CycleMark). Флаги/вопросы.
+                // Ctrl+ЛКМ = то же, что ПКМ (метка). По открытой клетке ядро игнорирует.
                 _engine.CycleMark(point.Value);
+            }
+            else if (_engine.GetCell(point.Value).State == CellState.Opened)
+            {
+                // ЛКМ по открытой цифре — аккорд.
+                _engine.Chord(point.Value);
             }
             else
             {
@@ -314,7 +305,7 @@ public class MainForm : Form
         }
         else if (e.Button == MouseButtons.Right)
         {
-            // ПКМ: метка (как было, на MouseUp — нужно для детекции аккорда).
+            // ПКМ: метка (флаг → вопрос → пусто). По открытой клетке ядро игнорирует.
             var point = ToCellPoint(e.X, e.Y);
             if (!point.HasValue)
                 return;
@@ -326,10 +317,7 @@ public class MainForm : Form
 
     private void BoardPanel_MouseEnter(object? sender, EventArgs e)
     {
-        // Защита от «застрявших» кнопок (если отпустили за пределами панели).
-        if (Control.MouseButtons == MouseButtons.None)
-            _downButtons = MouseButtons.None;
-
+        // Зажатая ЛКМ при входе на поле — смайлик «о».
         if (Control.MouseButtons == MouseButtons.Left
             && (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted))
             SetSmiley("smiley_oh.png");
@@ -339,6 +327,41 @@ public class MainForm : Form
     {
         if (_engine.State == GameState.InProgress || _engine.State == GameState.NotStarted)
             SetSmiley("smiley.png");
+    }
+
+    // --- Долгое нажатие (~0,5 с) — метка, как по ПКМ (тачпад/тачскрин) ---
+
+    private void StartLongPressTimer()
+    {
+        if (!_longPressTimer.Enabled)
+            _longPressTimer.Start();
+    }
+
+    private void StopLongPressTimer()
+    {
+        _longPressTimer.Stop();
+    }
+
+    private void LongPressTimer_Tick(object? sender, EventArgs e)
+    {
+        _longPressTimer.Stop();
+
+        // Long-press срабатывает, только если ЛКМ всё ещё зажата.
+        if (Control.MouseButtons != MouseButtons.Left)
+            return;
+
+        if (_longPressCell is not CellPoint cell)
+            return;
+
+        if (_engine.State == GameState.Won || _engine.State == GameState.Lost)
+            return;
+
+        // Долгое нажатие сработало — подавляем последующий MouseUp,
+        // чтобы клетка не открылась.
+        _suppressNextMouseUp = true;
+        ResetSmileyForCurrentState();
+        _engine.CycleMark(cell);
+        UpdateMineCounter();
     }
 
     // --- Вспомогательные методы для мыши ---

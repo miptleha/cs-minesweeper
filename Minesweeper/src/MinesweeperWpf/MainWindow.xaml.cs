@@ -346,9 +346,16 @@ public partial class MainWindow : Window
 
     // Поля для обработки ввода (шаг 23)
     private bool _isLeftDown = false;
-    private bool _isRightDown = false;
-    private CellPoint? _chordCandidate = null;
     private bool _suppressNextMouseUp = false;
+
+    // Долгое нажатие (~0,5 с) — метка, как по ПКМ (тачпад/тачскрин).
+    private readonly DispatcherTimer _longPressTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
+    private CellPoint? _longPressCell = null;
+
+    private const string ControlsHelpText =
+        "ЛКМ — открыть клетку; повторный ЛКМ по открытой цифре — аккорд (открыть соседей)." + "\n" +
+        "ПКМ — метка: флаг → вопрос → пусто." + "\n" +
+        "Ctrl+ЛКМ или долгое нажатие (~0,5 с) — то же, что ПКМ.";
 
     public MainWindow()
     {
@@ -358,6 +365,9 @@ public partial class MainWindow : Window
 
         // Шаг 30: обработка победы для показа диалогов имени и рекордов
         _vm.Engine.GameStateChanged += OnGameStateChangedDialog;
+
+        // Долгое нажатие (~0,5 с) — метка, как по ПКМ (тачпад/тачскрин).
+        _longPressTimer.Tick += OnLongPressTick;
 
         // Шаг 26: освобождение ресурсов при закрытии окна
         Closed += (s, e) => _vm.Dispose();
@@ -394,6 +404,9 @@ public partial class MainWindow : Window
     private void OnAboutClick(object sender, RoutedEventArgs e)
         => new AboutWindow { Owner = this }.ShowDialog();
 
+    private void OnControlsClick(object sender, RoutedEventArgs e)
+        => MessageBox.Show(this, ControlsHelpText, "Управление", MessageBoxButton.OK, MessageBoxImage.Information);
+
     // --- Обработчики поля (шаги 23–25) ---
 
     /// <summary>
@@ -429,26 +442,22 @@ public partial class MainWindow : Window
 
     private void OnBoardMouseDown(object sender, MouseButtonEventArgs e)
     {
-        // Средняя кнопка — chord сразу
-        if (e.ChangedButton == MouseButton.Middle)
+        if (e.ChangedButton == MouseButton.Left)
         {
-            var mp = ToCellPoint(e.GetPosition(Board));
-            if (mp.HasValue) _vm.Engine.Chord(mp.Value);
-            return;
+            _isLeftDown = true;
+            _longPressCell = ToCellPoint(e.GetPosition(Board));
+            StartLongPressTimer();
         }
 
-        if (e.ChangedButton == MouseButton.Left) _isLeftDown = true;
-        if (e.ChangedButton == MouseButton.Right) _isRightDown = true;
-
-        // Одновременное нажатие ЛКМ+ПКМ — кандидат на chord
-        if (_isLeftDown && _isRightDown)
-            _chordCandidate = ToCellPoint(e.GetPosition(Board));
-
-        // Одиночная ЛКМ без chord-кандидата — смайлик "oh"
+        // Смайлик "oh" — только для ЛКМ по закрытой клетке
+        // (по открытой цифре ЛКМ — аккорд, мигать не должен).
         if (e.ChangedButton == MouseButton.Left
-            && _chordCandidate is null
             && (_vm.State == GameState.InProgress || _vm.State == GameState.NotStarted))
-            _vm.SetSmiley("smiley_oh");
+        {
+            var p = ToCellPoint(e.GetPosition(Board));
+            if (p.HasValue && _vm.Engine.GetCell(p.Value).State != CellState.Opened)
+                _vm.SetSmiley("smiley_oh");
+        }
     }
 
     /// <summary>
@@ -482,23 +491,16 @@ public partial class MainWindow : Window
     private void OnBoardMouseUp(object sender, MouseButtonEventArgs e)
     {
         // Снять кнопку
-        if (e.ChangedButton == MouseButton.Left) _isLeftDown = false;
-        if (e.ChangedButton == MouseButton.Right) _isRightDown = false;
-
-        // Suppress — отмена следующего MouseUp после chord
-        if (_suppressNextMouseUp && _chordCandidate is null)
+        if (e.ChangedButton == MouseButton.Left)
         {
-            _suppressNextMouseUp = false;
-            ResetSmileyForCurrentState();
-            return;
+            _isLeftDown = false;
+            StopLongPressTimer();
         }
 
-        // Chord candidate — chord
-        if (_chordCandidate != null)
+        // Suppress — отмена действия после сработавшего долгого нажатия
+        if (_suppressNextMouseUp)
         {
-            _vm.Engine.Chord(_chordCandidate.Value);
-            _chordCandidate = null;
-            _suppressNextMouseUp = true;
+            _suppressNextMouseUp = false;
             ResetSmileyForCurrentState();
             return;
         }
@@ -514,6 +516,7 @@ public partial class MainWindow : Window
         // ==========================================
         if (e.ChangedButton == MouseButton.Right)
         {
+            // ПКМ — метка (флаг → вопрос → пусто). По открытой клетке ядро игнорирует.
             _vm.Engine.CycleMark(point.Value);
             return;
         }
@@ -523,15 +526,49 @@ public partial class MainWindow : Window
         // ==========================================
         if (e.ChangedButton == MouseButton.Left)
         {
-            // Ctrl+ЛКМ — CycleMark
+            // Ctrl+ЛКМ — то же, что ПКМ (метка).
             if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
             {
                 _vm.Engine.CycleMark(point.Value);
                 return;
             }
 
-            // Одиночный клик — OpenCell
-            _vm.Engine.OpenCell(point.Value);
+            // ЛКМ по открытой цифре — аккорд, иначе — открытие клетки.
+            if (_vm.Engine.GetCell(point.Value).State == CellState.Opened)
+                _vm.Engine.Chord(point.Value);
+            else
+                _vm.Engine.OpenCell(point.Value);
+        }
+    }
+
+    // --- Долгое нажатие (~0,5 с) — метка, как по ПКМ (тачпад/тачскрин) ---
+
+    private void StartLongPressTimer()
+    {
+        if (!_longPressTimer.IsEnabled)
+            _longPressTimer.Start();
+    }
+
+    private void StopLongPressTimer()
+    {
+        _longPressTimer.Stop();
+    }
+
+    private void OnLongPressTick(object? sender, EventArgs e)
+    {
+        StopLongPressTimer();
+
+        if (_longPressCell is not CellPoint cell)
+            return;
+
+        if (_isLeftDown
+            && (_vm.State == GameState.InProgress || _vm.State == GameState.NotStarted))
+        {
+            // Долгое нажатие сработало — подавляем последующий MouseUp,
+            // чтобы клетка не открылась.
+            _suppressNextMouseUp = true;
+            ResetSmileyForCurrentState();
+            _vm.Engine.CycleMark(cell);
         }
     }
 }

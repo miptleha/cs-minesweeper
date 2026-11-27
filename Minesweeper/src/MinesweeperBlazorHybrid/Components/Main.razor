@@ -39,6 +39,8 @@
                 <div class="menu-dropdown">
                     <span class="menu-item" @onclick="() => ShowRecords()">Лучшие результаты</span>
                     <div class="menu-separator"></div>
+                    <span class="menu-item" @onclick="() => ShowControls()">Управление</span>
+                    <div class="menu-separator"></div>
                     <span class="menu-item" @onclick="() => ShowAbout()">О программе</span>
                 </div>
             }
@@ -131,15 +133,15 @@
     /// </summary>
     private System.Timers.Timer? _timer;
 
-    // --- Состояние подавления клика (для аккордов — Группа 4) ---
+    // --- Состояние подавления клика (после долгого нажатия) ---
 
     /// <summary>
-    /// true после аккорда — следующий @onclick подавляется.
+    /// true после долгого нажатия — следующий @onclick подавляется.
     /// </summary>
     private bool _suppressNextClick;
 
     /// <summary>
-    /// true после аккорда — следующий @oncontextmenu подавляется.
+    /// true после долгого нажатия — следующий @oncontextmenu подавляется.
     /// </summary>
     private bool _suppressNextContextMenu;
 
@@ -150,17 +152,22 @@
     /// </summary>
     private string? _activeMenu;
 
-    // --- Состояние мыши (для аккордов — Группа 4) ---
+    // --- Состояние мыши ---
 
     /// <summary>
-    /// true если левая кнопка мыши зажата. Используется для аккордов (Группа 4).
+    /// true если левая кнопка мыши зажата.
     /// </summary>
     private bool _isLeftDown;
 
     /// <summary>
-    /// true если правая кнопка мыши зажата. Используется для аккордов (Группа 4).
+    /// Клетка, где началось нажатие ЛКМ (для долгого нажатия).
     /// </summary>
-    private bool _isRightDown;
+    private CellPoint? _longPressCell;
+
+    /// <summary>
+    /// Таймер долгого нажатия (~0,5 с) — метка, как по ПКМ (тачскрин).
+    /// </summary>
+    private System.Threading.Timer? _longPressTimer;
 
     // --- Life Cycle ---
 
@@ -196,6 +203,9 @@
         Engine.CellsRevealed -= OnCellsRevealed;
         Engine.BoardGenerated -= OnBoardGenerated;
         Engine.GameStateChanged -= OnGameStateChanged;
+
+        // Останавливаем таймер долгого нажатия.
+        StopLongPressTimer();
 
         // Уничтожаем таймер.
         _timer?.Dispose();
@@ -313,8 +323,8 @@
     // --- Обработчики ввода ---
 
     /// <summary>
-    /// Нажатие кнопки мыши на клетке: трекинг состояния кнопок + аккорды + смайлик "oh".
-    /// Закрывает меню, сбрасывает suppress-флаги, обнаруживает аккорд.
+    /// Нажатие кнопки мыши на клетке: запуск долгого нажатия + смайлик "oh".
+    /// Закрывает меню и сбрасывает suppress-флаги.
     /// </summary>
     private void OnCellMouseDown(MouseEventArgs e, CellPoint point)
     {
@@ -328,42 +338,22 @@
         if (Engine.State is GameState.Won or GameState.Lost)
             return;
 
-        // Средняя кнопка (button == 1) — аккорд сразу (Группа 4).
-        if (e.Button == 1)
-        {
-            Engine.Chord(point);
-            return;
-        }
-
-        // Левая кнопка (button == 0).
+        // Левая кнопка (button == 0): открыть клетку / аккорд по открытой цифре.
+        // Долгое нажатие (~0,5 с) — метка, как по ПКМ (тачскрин).
         if (e.Button == 0)
         {
-            // Если правая кнопка уже зажата — аккорд (Группа 7.3).
-            if (_isRightDown)
-            {
-                _suppressNextClick = true;
-                _suppressNextContextMenu = true;
-                Engine.Chord(point);
-                return;
-            }
-
             _isLeftDown = true;
-            _smileyImage = "smiley_oh.png";
-        }
+            _longPressCell = point;
 
-        // Правая кнопка (button == 2).
-        if (e.Button == 2)
-        {
-            // Если левая кнопка уже зажата — аккорд (Группа 7.3).
-            if (_isLeftDown)
+            // Смайлик «О» — только для ЛКМ по закрытой клетке
+            // (по открытой цифре ЛКМ — аккорд, мигать не должен).
+            if (Engine.GetCell(point).State != CellState.Opened
+                && Engine.State is not (GameState.Won or GameState.Lost))
             {
-                _suppressNextClick = true;
-                _suppressNextContextMenu = true;
-                Engine.Chord(point);
-                return;
+                _smileyImage = "smiley_oh.png";
             }
 
-            _isRightDown = true;
+            StartLongPressTimer();
         }
     }
 
@@ -373,10 +363,12 @@
     /// </summary>
     private void OnContainerMouseUp(MouseEventArgs e)
     {
-        // Сброс флага кнопки.
-        if (e.Button == 0) _isLeftDown = false;
-        // Средняя кнопка (button == 1) обрабатывается в OnCellMouseDown.
-        if (e.Button == 2) _isRightDown = false;
+        // Сброс флага кнопки и таймера долгого нажатия.
+        if (e.Button == 0)
+        {
+            _isLeftDown = false;
+            StopLongPressTimer();
+        }
 
         // Сброс смайлика.
         ResetSmileyForCurrentState();
@@ -416,7 +408,7 @@
 
         // Сбрасываем флаги кнопок.
         _isLeftDown = false;
-        _isRightDown = false;
+        StopLongPressTimer();
 
         // Сбрасываем suppress-флаги на всякий случай.
         _suppressNextClick = false;
@@ -424,8 +416,9 @@
     }
 
     /// <summary>
-    /// Клик ЛКМ по клетке: OpenCell (обычно) или CycleMark при Ctrl.
-    /// Подавляется после аккорда (флаг _suppressNextClick).
+    /// Клик ЛКМ по клетке: аккорд по открытой цифре, иначе OpenCell;
+    /// при Ctrl — CycleMark (аналог ПКМ).
+    /// Подавляется после долгого нажатия (флаг _suppressNextClick).
     /// </summary>
     private void OnLeftClick(MouseEventArgs e, CellPoint point)
     {
@@ -439,20 +432,24 @@
             return;
         }
 
-        // Ctrl+ЛКМ = CycleMark.
+        // Ctrl+ЛКМ — то же, что ПКМ (метка).
         if (e.CtrlKey)
         {
             Engine.CycleMark(point);
             return;
         }
 
-        // Обычное открытие клетки.
-        Engine.OpenCell(point);
+        // ЛКМ по открытой цифре — аккорд, иначе — открытие клетки.
+        if (Engine.GetCell(point).State == CellState.Opened)
+            Engine.Chord(point);
+        else
+            Engine.OpenCell(point);
     }
 
     /// <summary>
     /// ПКМ по клетке: CycleMark (Closed → Flagged → Question → Closed).
-    /// Подавляется после аккорда (флаг _suppressNextContextMenu).
+    /// По открытой клетке ядро игнорирует. Подавляется после долгого
+    /// нажатия (флаг _suppressNextContextMenu).
     /// </summary>
     private void OnRightClick(MouseEventArgs e, CellPoint point)
     {
@@ -494,6 +491,41 @@
             GameState.Lost => "smiley_lose.png",
             _ => "smiley.png"
         };
+    }
+
+    // --- Долгое нажатие (~0,5 с) — метка, как по ПКМ (тачскрин) ---
+
+    private const int LongPressMs = 500;
+
+    private void StartLongPressTimer()
+    {
+        StopLongPressTimer();
+        _longPressTimer = new System.Threading.Timer(_ => InvokeAsync(() =>
+        {
+            if (!_isLeftDown || _suppressNextClick)
+                return;
+
+            if (_longPressCell is not CellPoint cell)
+                return;
+
+            if (Engine.State is GameState.Won or GameState.Lost)
+                return;
+
+            // Долгое нажатие сработало — подавляем последующие
+            // @onclick и @oncontextmenu (на тачскрине long-press эмулирует ПКМ).
+            _suppressNextClick = true;
+            _suppressNextContextMenu = true;
+
+            Engine.CycleMark(cell);
+            ResetSmileyForCurrentState();
+            StateHasChanged();
+        }), null, LongPressMs, System.Threading.Timeout.Infinite);
+    }
+
+    private void StopLongPressTimer()
+    {
+        _longPressTimer?.Dispose();
+        _longPressTimer = null;
     }
 
     /// <summary>
@@ -597,6 +629,15 @@
     {
         CloseMenu();
         Dialogs.ShowAbout();
+    }
+
+    /// <summary>
+    /// Показать диалог «Управление» (из меню «Управление»).
+    /// </summary>
+    private void ShowControls()
+    {
+        CloseMenu();
+        Dialogs.ShowControls();
     }
 
     // --- Логика отрисовки клеток ---
