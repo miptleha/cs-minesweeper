@@ -1,4 +1,4 @@
-# 03 — Architecture
+﻿﻿# 03 — Architecture
 
 ## Проекты в решении
 
@@ -28,7 +28,7 @@
 |---|---|
 | `IRandomProvider` | Даёт случайные числа. Нужен, чтобы в тестах подменять `Random` на детерминированный фейк. |
 | `IRecordStore` | Сохраняет и загружает таблицу рекордов. Ядро не знает, куда именно (файл, БД, реестр). |
-| `ITimeProvider` | Даёт текущее время (`DateTime UtcNow`). Нужен, чтобы в тестах подменять реальные часы на управляемые. |
+| `ITimeProvider` | Даёт текущее время (`DateTime.UtcNow`). Нужен, чтобы в тестах подменять реальные часы на управляемые. |
 
 ### Дефолтные реализации портов
 
@@ -39,9 +39,7 @@
 | `SystemRandomProvider` | `IRandomProvider` | Обёртка над `System.Random`. В тестах подменяется на детерминированный фейк. |
 | `SystemTimeProvider` | `ITimeProvider` | Обёртка над `DateTime.UtcNow`. В тестах подменяется на ручные часы. |
 | `InMemoryRecordStore` | `IRecordStore` | Хранит рекорды в памяти. Для тестов и как заглушка в UI. |
-
-Для реального UI файловый `IRecordStore` (JSON/реестр) реализуется **вне** `MinesweeperCore`.
-В текущем решении он реализован в проекте MinesweeperWinForms как JsonRecordStore (сохраняет данные в %LocalAppData%\Minesweeper\records.json).
+| `JsonRecordStore` | `IRecordStore` | Файловое хранилище рекордов (`%LocalAppData%\Minesweeper\records.json`). Используется всеми UI-проектами. |
 
 ### `Events/`
 
@@ -72,11 +70,13 @@
 ## Как UI работает с ядром
 
 1. UI создаёт `GameEngine`, передавая ему `IRandomProvider` (обычно `SystemRandomProvider`) и
-`IRecordStore` (в WinForms это `JsonRecordStore`, в тестах — `InMemoryRecordStore`).
+`IRecordStore` (файловый `JsonRecordStore` из `MinesweeperCore.Infrastructure`, в тестах — `InMemoryRecordStore`).
 2. Вызывает `StartNewGame(settings)` при старте или новой игре.
 3. Для отрисовки запрашивает `GetCell(point)` — получает `CellInfo` (координаты, состояние, содержимое, число соседних мин) и рисует по нему.
-4. На клик вызывает `OpenCell(point)` (левая кнопка) или `CycleMark(point)`
-    (правая кнопка — циклически переключает метку Closed → Flagged → Question → Closed).
+4. На действия игрока вызывает методы ядра (триггеры ввода — см. `02-GAME-RULES.md` §6–§8):
+    - `OpenCell(point)` — ЛКМ по закрытой клетке;
+    - `Chord(point)` — ЛКМ по открытой цифре (аккорд);
+    - `CycleMark(point)` — ПКМ и её эквиваленты: Ctrl+ЛКМ (тачпад), долгое нажатие (сенсорный экран).
 5. Подписывается на события (`CellChanged`, `CellsRevealed`, `GameStateChanged`) и по ним обновляет экран.
 
 ## Правила для UI
@@ -86,16 +86,20 @@
 - UI работает только с `CellInfo`, `GameEngine` и аргументами событий. Внутренние модели (`Cell`, `Board`) UI не трогает.
 - UI не ссылается на WinForms / MonoGame из ядра — наоборот, не бывает.
 
-### Структура форм (ориентировочная, делать в зависимости от фреймвока)
+### Структура окон (ориентировочная, по конвенциям фреймворка)
 
-- `MainForm` — главное окно, отрисовка поля, обработка ввода.
-- `RecordsForm` — таблица рекордов (3 вкладки по уровням сложности).
-- `AboutForm` — окно «О программе».
-- `NamePromptForm` — запрос имени при победе.
+- **Main** — главное окно: отрисовка поля, обработка ввода, игровой цикл.
+- **Records** — таблица рекордов (3 вкладки по уровням сложности).
+- **About** — окно «О программе».
+- **NamePrompt** — запрос имени при победе.
+
+Это роли окон, а не имена классов. Классы и типы окон называйте по конвенциям
+целевого фреймворка: `Form` в WinForms, `Window`/`ContentDialog` в WPF и Avalonia,
+`Window` в MAUI и т. д. Подробнее — `04-UI-SPECIFICATION.md`.
 
 ## Правила для ядра
 
 - Ядро не ссылается на любой UI-проект.
 - Всё, что зависит от среды (случайность, файлы, время), — через интерфейсы из `Abstractions/`. Это нужно, чтобы тесты работали без реального `Random` и без файловой системы.
-- Публичное API ядра: `GameEngine`, `GameSettings`, `DifficultyPresets`, `DifficultyLevel`, `CellPoint`, `CellInfo`, `CellState`, `CellContent`, `GameState`, `RecordEntry`, `IRandomProvider`, `IRecordStore`, `ITimeProvider`, `SystemRandomProvider`, `SystemTimeProvider`, `InMemoryRecordStore`, все `*EventArgs`, `CellChange`.
+- Публичное API ядра: `GameEngine`, `GameSettings`, `DifficultyPresets`, `DifficultyLevel`, `CellPoint`, `CellInfo`, `CellState`, `CellContent`, `GameState`, `RecordEntry`, `IRandomProvider`, `IRecordStore`, `ITimeProvider`, `SystemRandomProvider`, `SystemTimeProvider`, `InMemoryRecordStore`, `JsonRecordStore`, все `*EventArgs`, `CellChange`.
 - `Board`, `Cell`, `MinePlacement`, `RevealService`, `WinCondition` — детали реализации.

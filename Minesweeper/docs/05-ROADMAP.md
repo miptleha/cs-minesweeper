@@ -1,4 +1,4 @@
-# 05 — Roadmap
+﻿# 05 — Roadmap
 
 > Статус на 2026-11-20: фазы 1–9 завершены. Дальше — новые варианты UI (Phase 10–39):
 > технологии упорядочены по востребованности и актуальности — от мейнстрима к экспериментам.
@@ -12,10 +12,10 @@
 | 1 | **Core Domain.** Модели, настройки сложности. | — | — | ✅ Готово (0.1.0) | — |
 | 2 | **Core Logic.** Генерация мин, каскадное открытие, проверка победы. | — | — | ✅ Готово (0.1.0) | — |
 | 3 | **Engine & Ports.** Фасад `GameEngine` и порты с дефолтными реализациями. | — | — | ✅ Готово (0.1.0) | `03-ARCHITECTURE.md` |
-| 4 | **Core Testing.** Юнит-тесты ядра. | — | — | ✅ Готово (0.2.0) | `07-TESTING.md` |
-| 5 | **WinForms UI.** Классический интерфейс на Windows Forms. | 🟢 Низкая | Встроено в .NET SDK | ✅ Готово (0.2.0) | `09-PHASE-5-WINFROMS.md` |
-| 6 | **MonoGame UI.** Игровой фреймворк, спрайты и Content Pipeline. | 🟡 Средняя | `MonoGame.Framework.DesktopGL` | ✅ Готово (0.3.0) | `10-PHASE-6-MONOGAME.md` |
-| 7 | **WPF.** XAML UI с Data Binding и MVVM. | 🟢 Низкая | Встроено в .NET SDK | ✅ Готово (0.4.0) | `11-PHASE-7-WPF.md` |
+| 4 | **Core Testing.** Юнит-тесты ядра. | — | — | ✅ Готово (0.2.0) | — |
+| 5 | **WinForms UI.** Классический интерфейс на Windows Forms. | 🟢 Низкая | Встроено в .NET SDK | ✅ Готово (0.2.0) | — |
+| 6 | **MonoGame UI.** Игровой фреймворк, спрайты и Content Pipeline. | 🟡 Средняя | `MonoGame.Framework.DesktopGL` | ✅ Готово (0.3.0) | — |
+| 7 | **WPF.** XAML UI с Data Binding и MVVM. | 🟢 Низкая | Встроено в .NET SDK | ✅ Готово (0.4.0) | — |
 | 8 | **Avalonia UI.** Кроссплатформенный XAML UI. | 🟡 Средне-низкая | `Avalonia.Desktop` (~30–40 MB) | ✅ Готово (0.5.0) | — |
 | 9 | **Blazor Hybrid.** UI на HTML/CSS + WebView2. | 🟡 Средняя | `BlazorWebView` (лёгкий; + WebView2 Runtime) | ✅ Готово (0.6.0) | — |
 | 10 | **.NET MAUI.** Кроссплатформенный XAML-фреймворк Microsoft. | 🟡 Средняя | `Microsoft.Maui.Controls` + workload `maui` | ⬜ Запланировано | — |
@@ -68,14 +68,21 @@
 
 1. **Архитектура.** UI — тонкий слой поверх готового `GameEngine`. Никаких
    изменений в `MinesweeperCore`: если UI нужны новые данные — это баг UI, не ядра.
-2. **Раскладка ввода** — по §6.1 `09-PHASE-5-WINFROMS.md`: ЛКМ = `OpenCell`,
-   ПКМ = `CycleMark`, Ctrl+ЛКМ = `CycleMark`, ЛКМ+ПКМ или средняя кнопка = `Chord`,
-   клик по смайлику = `StartNewGame`. Поведение одинаково во всех UI.
-3. **Смайлик и LED-счётчики** — как в WinForms/MonoGame: `smiley_oh` при `MouseDown`
-   на поле, `smiley_win`/`smiley_lose` по `GameStateChanged`, `minus.png` + две
-   цифры при отрицательном `RemainingMines`.
+2. **Раскладка ввода** — ЛКМ по закрытой клетке = `OpenCell`, ЛКМ по открытой
+   цифре = `Chord`; ПКМ = `CycleMark`, эквиваленты ПКМ: Ctrl+ЛКМ (тачпад) и
+   долгое нажатие ЛКМ (сенсорные экраны); клик по смайлику = `StartNewGame`.
+   Открытие клетки — по отпусканию кнопки (MouseUp / Click / PointerReleased),
+   а не по нажатию. Поведение одинаково во всех UI; детали — `02-GAME-RULES.md`
+   (§6–§8) и `04-UI-SPECIFICATION.md`.
+3. **Смайлик и LED-счётчики** — `smiley_oh` при зажатой ЛКМ над полем (Board):
+   в любой точке поля, но не над меню, не над TopPanel и не за пределами окна;
+   в `Won`/`Lost` не показывается никогда; сброс — при отпускании кнопки,
+   уходе курсора с поля или переходе игры в `Won`/`Lost` в момент зажатия.
+   `smiley_win`/`smiley_lose` — по `GameStateChanged`, `minus.png` + две цифры
+   при отрицательном `RemainingMines`. Детали — `04-UI-SPECIFICATION.md`,
+   раздел «Смайлик».
 4. **Ассеты** — общие из `assets/`, имена файлов не меняются; в проект копируются
-   по конвенции фреймворка (см. `04-AGENT-GUIDE.md`, раздел «Shared Assets»).
+   по конвенции фреймворка.
 5. **Рекорды** — общий `JsonRecordStore` из `MinesweeperCore.Infrastructure`,
    единый `%LocalAppData%\Minesweeper\records.json` для всех версий: рекорд,
    поставленный в WPF, виден в WinForms и наоборот.
@@ -83,6 +90,9 @@
    с `ProjectReference` на `MinesweeperCore.csproj`.
 7. **Release.** Self-contained, `win-x64`, как в существующих проектах — за
    исключением Godot и Stride, где итоговую сборку делает сам движок.
+8. **Незнакомый API.** Если API фреймворка или пакета незнаком — изучай README
+   и примеры его NuGet-пакета. Поведение игры всегда сверяй с доками (02/04),
+   даже если идиомы фреймворка предлагают иначе.
 
 ---
 

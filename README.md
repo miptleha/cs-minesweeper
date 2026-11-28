@@ -1,4 +1,6 @@
-﻿Classic **Minesweeper** — the game you remember from old Windows — re-implemented
+﻿![Скриншот игры](game.png)
+
+Classic **Minesweeper** — the game you remember from old Windows — re-implemented
 in modern .NET.
 
 The idea behind the project is to take one shared core and try as many desktop
